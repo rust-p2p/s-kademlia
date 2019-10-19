@@ -1,8 +1,11 @@
 [package]
 name = "s-kademlia"
 version = "0.1.0"
-authors = ["David Craven <david@craven.ch>"]
+authors = ["4meta5"]
 edition = "2018"
+description = "s/kademlia in rust"
+categories = ["dht", "kademlia"]
+readme = "README.md"
 
 [dependencies]
 async-trait = "0.1"
@@ -10,8 +13,21 @@ async-std = "0.99"
 bytes = "0.4"
 smallvec = "0.6"
 arrayvec = "0.5.1"
+blake2-rfc = "0.2.18"
 multihash = "0.8.0"
 criterion = "0.3.0"
+crossbeam-utils = "0.6.6"
+
+[dependencies.ed25519-dalek]
+git = "https://github.com/dvc94ch/ed25519-dalek"
+branch = "update-rand"
+
+[dependencies.x25519-dalek]
+version = "0.5.2"
+default-features = false
+features = ["u64_backend"]
+git = "https://github.com/dvc94ch/x25519-dalek"
+branch = "update-rand"
 
 [dev-dependencies]
 quickcheck = "0.9.0"
