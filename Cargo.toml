@@ -14,6 +14,7 @@ bytes = "0.4"
 smallvec = "0.6"
 arrayvec = "0.5.1"
 blake2-rfc = "0.2.18"
+disco = {path = "../disco", default-features = false}
 multihash = "0.8.0"
 criterion = "0.3.0"
 crossbeam-utils = "0.6.6"

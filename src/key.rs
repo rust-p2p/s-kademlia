@@ -10,9 +10,15 @@ use crate::x25519;
 #[derive(Clone)]
 pub struct Key<'a> {
     public_key: ed25519::PublicKey,
-    secret_key: &'a ed25519::Keypair,
+    secret_key: &'a SecretKey<'a>,
     // associated id? for (1) and (2)
 }
+
+// define some generic public key
+pub struct PublicKey(ed25519::PublicKey);
+
+// figure out the right syntax for this based on David's code
+pub struct SecretKey('a, T: &'a ed25519::Keypair);
 
 impl<'a> Key<'a> {
     // generate a keypair
@@ -24,19 +30,10 @@ impl<'a> Key<'a> {
         let public = match secret {
             SecretKey::Ed25519(pair) => pair.public.into(),
         };
+        // find an assign an id using this public key
+        // -- how is this verified?
         Self { secret, public }
     }
-
-    // TO FIGURE OUT
-    //
-
-    // (1) weak signature
-    // inputs: timestamp, IP, port
-    // used for: FIND_NODE and PING messages
-
-    // (2) strong signature
-    // inputs: message 
-    // used for: storage
 }
 
 // TODO: other thing in paper not yet understood...
