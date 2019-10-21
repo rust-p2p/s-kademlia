@@ -22,19 +22,9 @@ pub use ed25519_dalek as ed25519;
 pub use x25519_dalek as x25519;
 
 /*
-surjection from `public_key` to `node_id`
-WeakSignature associated with Node
-StrongSignature associated with public_key
-every Node has a `node_id` which has an associated `public_key`
-
-there exists only one `public_key` for every `node_id` but 
-every `public_key` may generate an infinite number of `node_id`
-=> the criteria for `node_id` is designed to prevent sybil attacks
-*/
-
-/*
+Implementation Details
 * node is stored in a kbucket which is a stored in a table
 * weak_signatures come from nodes
-* strong_signatures come from public_keys (which could have multiple associated nodes)
---> should probably restructure so both signature_types come from node (node has associated public_key and uses private_key to sign PublicSignature)
+* strong signatures sign messages associated with `node_id`s (this layer of indirection seems poorly designed)
+* every layer that requires async access should be configured for async access
 */

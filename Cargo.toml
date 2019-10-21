@@ -10,11 +10,12 @@ readme = "README.md"
 [dependencies]
 async-trait = "0.1"
 async-std = "0.99"
-bytes = "0.4"
+bytes = "0.4.12"
+zeroize = "1.0.0"
+time = "0.1.42"
 smallvec = "0.6"
 arrayvec = "0.5.1"
-blake2-rfc = "0.2.18"
-disco = {path = "../disco", default-features = false}
+disco = {git = "https://github.com/rust-p2p/disco", default-features = false}
 multihash = "0.8.0"
 criterion = "0.3.0"
 crossbeam-utils = "0.6.6"
@@ -23,20 +24,6 @@ crossbeam-utils = "0.6.6"
 git = "https://github.com/dvc94ch/ed25519-dalek"
 branch = "update-rand"
 
-[dependencies.x25519-dalek]
-version = "0.5.2"
-default-features = false
-features = ["u64_backend"]
-git = "https://github.com/dvc94ch/x25519-dalek"
-branch = "update-rand"
-
-[dev-dependencies]
-quickcheck = "0.9.0"
-model = "0.1"
-
-[[bench]]
-name = "lock"
-harness = false
-
-[profile.release]
-debug = true
+# [dev-dependencies]
+# quickcheck = "0.9.0"
+# model = "0.1"

@@ -1,5 +1,23 @@
-//! NodeTable Logic
-//! store for all the buckets
+// [Implementation Notes]
+//
+// 1. Routing Table Layout
+//
+// The routing table is currently implemented as a fixed-size "array" of
+// buckets, ordered by increasing distance relative to a local key
+// that identifies the local peer. This is an often-used, simplified
+// implementation that approximates the properties of the b-tree (or prefix tree)
+// implementation described in the full paper [0], whereby buckets are split on-demand.
+// This should be treated as an implementation detail, however, so that the
+// implementation may change in the future without breaking the API.
+
+
+
+
+
+//! Routing Table Layout
+//! - should be treated as an implementation detail s.t. future changes do not break the core API (modular piece)
+//! - the properties of the b-tree or prefix tree are relevant to how the distance must be stored
+//! --> ensure buckets can be split on-demand?
 //! -- goal is to load-balance between buckets to minimize lookups in different scenarios
 //! -- there are fundamental tradeoffs ie bias towards recency vs worste-case...
 //!

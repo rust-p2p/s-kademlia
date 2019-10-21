@@ -1,27 +1,23 @@
-
-// just a feeling this will be necessary
-// TODO: verify if this is the case
 use crate::id::{NodeTableId, NodeId};
 use crate::node::Node;
 
-///
-/// -- but I am reconsidering this structure...
-
 /// K-bucket - structure for keeping last nodes in Kademlia.
 pub struct KBucket<IPAddr, Port, NodeId> {
+    // VecDeque vs ArrayVec? open issue
     data: VecDeque<Node<IPAddr, Port, NodeId>>,
-    size: usize,
+    size: usize, // why usize? \exists default
 }
 
-// except I want it to be async bro...
+// issue
+// - building a more general configuration (can be done by using the parameters of the KBucket)
 
 impl<IPAddr, Port, NodeId> KBucket<IPAddr, Port, NodeId>
 where
-    IpAddr: Clone + Debug,
+    IpAddr: Clone + Debug, // TODO: specify trait bounds in context of `node::WeakSignature` as the container object
     Port: Clone + Debug + Send,
 {
     pub fn new(k: usize) -> KBucket<IPAddr, Port, NodeId> {
-        assert!(k > 0);
+        // TODO: some check here that the size fits some bound
         KBucket {
             data: VecDeque::new(),
             size: k,
