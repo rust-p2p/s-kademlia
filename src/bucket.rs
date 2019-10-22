@@ -2,7 +2,8 @@ use crate::id::{NodeTableId, NodeId};
 use crate::node::Node;
 
 /// K-bucket - structure for keeping last nodes in Kademlia.
-pub struct KBucket<IPAddr, Port, NodeId> {
+#[derive(Clone, Debug)]
+pub struct KBucket<Node> {
     // VecDeque vs ArrayVec? open issue
     data: VecDeque<Node<IPAddr, Port, NodeId>>,
     size: usize, // why usize? \exists default

@@ -27,3 +27,19 @@ branch = "update-rand"
 # [dev-dependencies]
 # quickcheck = "0.9.0"
 # model = "0.1"
+
+
+[[bench]]
+name = "pow"
+harness = false
+
+[[bench]]
+name = "store"
+harness = false
+
+[features]
+default = ["std"]
+std = []
+
+[profile.bench]
+debug = true

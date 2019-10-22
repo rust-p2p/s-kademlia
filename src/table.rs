@@ -30,6 +30,7 @@
 //!
 //! section 4.2 of the s/kad paper for cache eviction policy
 use crate::bucket;
+use crate::node::Node;
 use crate::id; // specifically NodeId, NodeTableId?
 
 
