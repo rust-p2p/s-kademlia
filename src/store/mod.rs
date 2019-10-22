@@ -1,3 +1,8 @@
+// Storage DHT
+mod entry;
+mod bucket;
+mod table;
+
 // cache design for many entries
 use crate::key::KeyPair;
 use std::hash::{Hash, Hasher};

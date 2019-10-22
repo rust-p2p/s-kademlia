@@ -1,31 +1,37 @@
 use crate::ed25519;
 use crate::error;
-use time::SteadyTime;
+// use time::SteadyTime;
 use zeroize;
 
 pub struct KeyPair(ed25519::KeyPair);
 
 impl KeyPair {
     pub fn new() -> Result<Keypair, AntiSybilError> {
-        // TODO: timeout checks better and more research on this PoW
-        let super_counter = SteadyTime::now()
-        loop {
-            let new_keypair = ed25519::Keypair::generate(&mut rand::thread_rng());
-            let difficulty: u32 = 5; // number of required trailing zeros
-            let counter = 0u32;
-            let success = true;
-            new_keypair.to_bytes().into_iter().rev().for_each(|i| {
-                if counter < difficulty && i != 0 {
-                    success = false;
-                }
-                counter += 1;
-            });
-            if success { return Ok(Keypair(new_keypair)) };
-            super_counter += 1;
-            if super_counter > timeout {
-                return Err(AntiSybilError::new("Anti-sybil mechanism timed out"))
-            }
-        };
+
+        // if pow/anti-sybil mechanism here: // see issue #3
+        // comment next line out
+        return Ok(ed25519::Keypair::generate(&mut rand::thread_rng()));
+
+        // issue #3, dumb proof of work for anti-sybil
+        // comment *in* these lines
+        // let super_counter = SteadyTime::now()
+        // loop {
+        //     let new_keypair = ed25519::Keypair::generate(&mut rand::thread_rng());
+        //     let difficulty: u32 = 5; // number of required trailing zeros
+        //     let counter = 0u32;
+        //     let success = true;
+        //     new_keypair.to_bytes().into_iter().rev().for_each(|i| {
+        //         if counter < difficulty && i != 0 {
+        //             success = false;
+        //         }
+        //         counter += 1;
+        //     });
+        //     if success { return Ok(Keypair(new_keypair)) };
+        //     super_counter += 1;
+        //     if super_counter > timeout {
+        //         return Err(AntiSybilError::new("Anti-sybil mechanism timed out"))
+        //     }
+        // };
     }
 
     fn encode(&self) -> [u8; 64] {

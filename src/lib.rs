@@ -16,6 +16,8 @@
 mod cache;
 mod bucket;
 mod key;
+mod id;
+mod node;
 mod store;
 
 pub use ed25519_dalek as ed25519;
@@ -27,4 +29,9 @@ Implementation Details
 * weak_signatures come from nodes
 * strong signatures sign messages associated with `node_id`s (this layer of indirection seems poorly designed)
 * every layer that requires async access should be configured for async access
+*/
+
+/*
+Managing the mapping between id generation and public key seems like a common problem
+- I propose no anti-sybil mechanism, but make it pluggable (have a function in the file and comment it out)...
 */

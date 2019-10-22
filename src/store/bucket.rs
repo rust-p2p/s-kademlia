@@ -5,7 +5,7 @@ use crate::node::Node;
 #[derive(Clone, Debug)]
 pub struct KBucket<Node> {
     // VecDeque vs ArrayVec? open issue
-    data: VecDeque<Node<IPAddr, Port, NodeId>>,
+    data: VecDeque<Node<NodeId>>,
     size: usize, // why usize? \exists default
 }
 
