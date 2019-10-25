@@ -1,5 +1,6 @@
 use std::error::Error;
 use std::fmt;
+use crate::ed25519::{PublicKey, SecretKey};
 
 // TODO
 // - macro for generating scaffolding for future similar errors

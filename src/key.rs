@@ -1,5 +1,5 @@
-use crate::ed25519;
-use crate::error;
+use crate::ed25519::{PublicKey, SecretKey};
+use crate::error::*;
 // use time::SteadyTime;
 use zeroize;
 

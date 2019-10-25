@@ -10,6 +10,7 @@
 //! -- different data store for PeerId membership via Brahms gossip
 use crate::node::NodeInfo;
 use crate::id::NodeId;
+use disco::DiscoHash;
 use std::collections::VecDeque;
 use std::cmp; // for the find method, comparing distances
 

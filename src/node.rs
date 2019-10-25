@@ -5,6 +5,7 @@
 //! ...note that protobufs are used in lieu of peer_ids
 
 use crate::id::NodeId;
+use disco::DiscoHash;
 use std::sync::{Arc, Mutex};
 use crate::store::Table;
 
