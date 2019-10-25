@@ -1,14 +1,15 @@
 extern crate arrayvec;
-#[macro_use] extern crate bencher;
+#[macro_use]
+extern crate bencher;
 
 use std::io::Write;
 
 // TODO: check performance for comparable VecDequeue operations (vs arrayvec)
-use std::collections::VecDeque;
 use arrayvec::ArrayVec;
+use std::collections::VecDeque;
 
-use bencher::Bencher;
 use bencher::black_box;
+use bencher::Bencher;
 
 fn extend_with_constant(b: &mut Bencher) {
     let mut v = ArrayVec::<[u8; 512]>::new();
@@ -68,12 +69,13 @@ fn extend_from_slice(b: &mut Bencher) {
     b.bytes = v.capacity() as u64;
 }
 
-benchmark_group!(benches,
-                 extend_with_constant,
-                 extend_with_range,
-                 extend_with_slice,
-                 extend_with_write,
-                 extend_from_slice
+benchmark_group!(
+    benches,
+    extend_with_constant,
+    extend_with_range,
+    extend_with_slice,
+    extend_with_write,
+    extend_from_slice
 );
 
 benchmark_main!(benches);

@@ -1,13 +1,14 @@
 use crate::ed25519;
-use std::{convert::TryFrom, fmt, str::FromStr};
 use bs58;
 use disco::DiscoHash;
+use std::hash::Hash;
+use std::{convert::TryFrom, fmt, str::FromStr};
 use uint::*; // U256
 
 /// NodeId Struct
 ///
 /// - wrapper around DiscoHash
-/// - default implements the trait described below 
+/// - default implements the trait described below
 /// - easy TODO: refactor to make more generic (don't specify DiscoHash)
 pub struct NodeId<T: Hash + Eq + PartialEq + Clone> {
     pub id: T,
@@ -28,22 +29,22 @@ impl NodeId<DiscoHash> {
     fn from_public_key(key: PublicKey) -> NodeId<DiscoHash> {
         let mut h = DiscoHash::new(32);
         h.write(pubkey.as_bytes());
-        NodeId { h.sum() }
+        NodeId { id: h.sum() }
     }
 
     /// Checks whether `data` is a valid `NodeId`. if so, returns the `NodeId`. If not,
     /// returns back the data as an error,
     #[inline]
-    pub fn from_bytes(data: Vec<u8>) -> Result<NodeId<DiscoHash>,  Vec<u8>> {
+    pub fn from_bytes(data: Vec<u8>) -> Result<NodeId<DiscoHash>, Vec<u8>> {
         let mut h = DiscoHash::new(32);
         h.write(data.as_bytes());
-        Ok(NodeId { h.sum() })
+        Ok(NodeId { id: h.sum() })
     }
 
     /// Turns a `DiscoHash` into a `NodeId`. Dumb simple by construction
     #[inline]
-    pub fn from_discohash(data: DiscoHash) -> Result<NodeId<DiscoHash>, DiscoHash> {
-        Ok(NodeId { data })
+    pub fn from_discohash(hash: DiscoHash) -> Result<NodeId<DiscoHash>, DiscoHash> {
+        Ok(NodeId { id: hash })
     }
 
     // TODO: useful to generate random NodeId function
@@ -55,7 +56,7 @@ impl NodeId<DiscoHash> {
     /// Default distance by XOR metric
     pub fn distance<U>(&self, other: &U) -> Distance
     where
-        U: AsRef<NodeId<DiscoHash>>
+        U: AsRef<NodeId<DiscoHash>>,
     {
         let a = U256::from(self.0.as_ref());
         let b = U256::from(other.as_ref().0.as_ref());

@@ -13,9 +13,9 @@
 //! [s/kademlia](https://www.researchgate.net/publication/4319659_SKademlia_A_practicable_approach_towards_secure_key-based_routing),
 //! to enhance kademlia with certain security features.
 
-mod key;
 mod error;
 mod id;
+mod key;
 mod node;
 mod store;
 

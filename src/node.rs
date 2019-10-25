@@ -5,13 +5,12 @@
 //! ...note that protobufs are used in lieu of peer_ids
 
 use crate::id::NodeId;
+use std::sync::{Arc, Mutex};
 use crate::store::Table;
 
-/// *Reputation* (binary status atm)
+/// *Reputation* (binary status, connected or not)
 ///
-/// - designed from the ground up with a field for sharing strategies for certain types of data
-/// ...still being researched
-/// - `Status` might contain more information
+///
 #[derive(PartialEq, Eq, Debug, Copy, Clone)]
 pub enum NodeScore<Status> {
     /// The node is considered connected.
@@ -21,27 +20,25 @@ pub enum NodeScore<Status> {
 } // T might represent some object with reputation-based information
 
 #[derive(Clone, Debug)]
-pub struct NodeInfo<NodeId<DiscoHash>> {
+pub struct NodeInfo<Hash> {
     /// ID of the node.
-    pub id: NodeId<DiscoHash>,
+    pub id: NodeId<Hash>,
     /// Network address of the node
-    pub port: String, /// same as address? or when is each used?
-    /// Score (reputation) of the node
-    pub score: NodeScore,
+    pub port: String, // same as address? or when is each used?
+                      // Score (reputation) of the node
+                      // pub score: NodeScore,
 }
 
-// TODO:
-// 
-// - consider these fields in context of the protocol...
+/// Local NodeConfig
 #[derive(Clone)]
-pub struct Node {
-    node_data: Arc<NodeInfo<NodeId<DiscoHash>>>,
+pub struct NodeConfig {
+    node_data: Arc<NodeInfo<DiscoHash>>,
     routing_table: Arc<Mutex<Table<NodeInfo<DiscoHash>>>>,
-    // -- other possible storage items
+    // -- other possible storage items --
     // storage: Arc<Mutex<Storage>>, // partition storage based on data type (red-blue)
     // pending_requests: Arc<Mutex<HashMap<Key, Sender<Response>>>>, // use libp2p Provider abstraction for pull response interface
     // is_active: Arc<AtomicBool>, // could make this a more complex config specifying
-                                // nuanced participation in various protocols `Arc<Protocol>`)
+    // nuanced participation in various protocols `Arc<Protocol>`)
 }
 
 // Traits for Node
