@@ -13,9 +13,8 @@
 //! [s/kademlia](https://www.researchgate.net/publication/4319659_SKademlia_A_practicable_approach_towards_secure_key-based_routing),
 //! to enhance kademlia with certain security features.
 
-mod cache;
-mod bucket;
 mod key;
+mod error;
 mod id;
 mod node;
 mod store;
@@ -33,5 +32,5 @@ Implementation Details
 
 /*
 Managing the mapping between id generation and public key seems like a common problem
-- I propose no anti-sybil mechanism, but make it pluggable (have a function in the file and comment it out)...
+- I propose no anti-sybil mechanism, but make it pluggable (have a function in the file and comment it out? add benches for it)
 */

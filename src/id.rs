@@ -1,5 +1,6 @@
 use crate::ed25519;
 use std::{convert::TryFrom, fmt, str::FromStr};
+use bs58;
 use disco::DiscoHash;
 use uint::*; // U256
 
@@ -8,21 +9,23 @@ use uint::*; // U256
 /// - wrapper around DiscoHash
 /// - default implements the trait described below 
 /// - easy TODO: refactor to make more generic (don't specify DiscoHash)
-#[derive(Clone, PartialEq, Eq, Hash)]
-pub struct NodeId {
-    pub id: DiscoHash,
+pub struct NodeId<T: Hash + Eq + PartialEq + Clone> {
+    pub id: T,
 }
+// default DiscoHash impl below
+// -> can add impl NodeId<MultiHash>
 
 /// The metric for DHT NodeIds
 ///
-/// - separate the ID from the topology logic
+/// - to separate the ID from the topology logic
 #[derive(Copy, Clone, PartialEq, Eq, Default, PartialOrd, Ord, Debug)]
 pub struct Distance(pub(super) U256);
+// could add impl associated with distance for by default finding the closest k-neighbors?
 
-impl NodeId {
+impl NodeId<DiscoHash> {
     /// Builds a `NodeId` from a public key
     #[inline]
-    fn from_public_key(key: PublicKey) -> NodeId {
+    fn from_public_key(key: PublicKey) -> NodeId<DiscoHash> {
         let mut h = DiscoHash::new(32);
         h.write(pubkey.as_bytes());
         NodeId { h.sum() }
@@ -31,15 +34,15 @@ impl NodeId {
     /// Checks whether `data` is a valid `NodeId`. if so, returns the `NodeId`. If not,
     /// returns back the data as an error,
     #[inline]
-    pub fn from_bytes(data: Vec<u8>) -> Result<NodeId,  Vec<u8>> {
-        let mut h = DiscoHash::new(32)
+    pub fn from_bytes(data: Vec<u8>) -> Result<NodeId<DiscoHash>,  Vec<u8>> {
+        let mut h = DiscoHash::new(32);
         h.write(data.as_bytes());
         Ok(NodeId { h.sum() })
     }
 
     /// Turns a `DiscoHash` into a `NodeId`. Dumb simple by construction
     #[inline]
-    pub fn from_discohash(data: DiscoHash) -> Result<NodeId, DiscoHash> {
+    pub fn from_discohash(data: DiscoHash) -> Result<NodeId<DiscoHash>, DiscoHash> {
         Ok(NodeId { data })
     }
 
@@ -52,7 +55,7 @@ impl NodeId {
     /// Default distance by XOR metric
     pub fn distance<U>(&self, other: &U) -> Distance
     where
-        U: AsRef<NodeId>
+        U: AsRef<NodeId<DiscoHash>>
     {
         let a = U256::from(self.0.as_ref());
         let b = U256::from(other.as_ref().0.as_ref());
@@ -60,23 +63,23 @@ impl NodeId {
     }
 }
 
-impl From<PublicKey> for NodeId {
+impl From<PublicKey> for NodeId<DiscoHash> {
     #[inline]
     fn from(key: PublicKey) -> NodeId {
         NodeId::from_public_key(key)
     }
 }
 
-impl TryFrom<Vec<u8>> for NodeId {
-    type Error: Vec<u8>;
+impl TryFrom<Vec<u8>> for NodeId<DiscoHash> {
+    type Error = Vec<u8>;
 
     fn try_from(value: Vec<u8>) -> Result<Self, Self::Error> {
         NodeId::from_bytes(value)
     }
 }
 
-impl Tryfrom<DiscoHash> for NodeId {
-    type Error: DiscoHash;
+impl Tryfrom<DiscoHash> for NodeId<DiscoHash> {
+    type Error = DiscoHash;
 
     fn try_from(data: DiscoHash) -> Result<Self, Self::Error> {
         NodeId::from_discohash(data)
@@ -84,9 +87,9 @@ impl Tryfrom<DiscoHash> for NodeId {
 }
 
 // TODO:
-// - PartialEq<DiscoHash> for NodeId
-// - PartialEq<NodeId> for DiscoHash
-// - AsRef<DiscoHash> for NodeId
-// - AsRef<[u8]> for NodeId
-// - Into<DiscoHash> for NodeId
-// - FromStr for NodeId ?
+// - PartialEq<NodeId<DiscoHash>> for NodeId<DiscoHash>
+// - PartialEq<NodeId<DiscoHash>> for DiscoHash
+// - AsRef<DiscoHash> for NodeId<DiscoHash>
+// - AsRef<[u8]> for NodeId<DiscoHash>
+// - Into<DiscoHash> for NodeId<DiscoHash>
+// - FromStr for NodeId<DiscoHash>

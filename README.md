@@ -4,6 +4,10 @@ pure Rust implementation of [s/kademlia](https://www.researchgate.net/publicatio
 
 ## why
 
+Instead of a puzzle for ID management, 
+* using brahms
+* using some other thing
+
 prevents sybil attacks on the address space by creating a minimum work threshold for node generation (storage NodeId generation requires *trailing* bits of 0s `=>` slows down process of adding new nodes)
 
 ## implementation details

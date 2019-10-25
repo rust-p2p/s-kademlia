@@ -8,27 +8,23 @@ categories = ["dht", "kademlia"]
 readme = "README.md"
 
 [dependencies]
-async-trait = "0.1"
-async-std = "0.99"
 bytes = "0.4.12"
+bs58 = "0.3.0"
 uint = "0.8.1"
 zeroize = "1.0.0"
 time = "0.1.42"
-smallvec = "0.6"
 arrayvec = "0.5.1"
 disco = {git = "https://github.com/rust-p2p/disco", default-features = false}
-multihash = "0.8.0"
-criterion = "0.3.0"
 crossbeam-utils = "0.6.6"
 
 [dependencies.ed25519-dalek]
 git = "https://github.com/dvc94ch/ed25519-dalek"
 branch = "update-rand"
 
-# [dev-dependencies]
+[dev-dependencies]
+criterion = "0.3.0"
 # quickcheck = "0.9.0"
 # model = "0.1"
-
 
 [[bench]]
 name = "pow"

@@ -1,23 +1,11 @@
 //! Node
 //!
-// ! - research ways for embedding latency in this section
+//! - research ways for embedding latency in this section
+//!
+//! ...note that protobufs are used in lieu of peer_ids
+
 use crate::id::NodeId;
-
-pub struct Node {
-    pub local_node: NodeInfo,
-    // could replicate data bases
-    // phantomData
-}
-
-#[derive(Clone, Debug)]
-pub struct NodeInfo<NodeId, NodeScore> {
-    /// ID of the node.
-    pub id: NodeId,
-    /// Network address of the node. (is this synonymous with port)
-    pub port: String,
-    /// Score (reputation) of the node
-    pub score: NodeScore,
-}
+use crate::store::Table;
 
 /// *Reputation* (binary status atm)
 ///
@@ -32,6 +20,31 @@ pub enum NodeScore<Status> {
     NotConnected(Status),
 } // T might represent some object with reputation-based information
 
-// impl WeakSignature
+#[derive(Clone, Debug)]
+pub struct NodeInfo<NodeId<DiscoHash>> {
+    /// ID of the node.
+    pub id: NodeId<DiscoHash>,
+    /// Network address of the node
+    pub port: String, /// same as address? or when is each used?
+    /// Score (reputation) of the node
+    pub score: NodeScore,
+}
 
-// impl StrongSignature
+// TODO:
+// 
+// - consider these fields in context of the protocol...
+#[derive(Clone)]
+pub struct Node {
+    node_data: Arc<NodeInfo<NodeId<DiscoHash>>>,
+    routing_table: Arc<Mutex<Table<NodeInfo<DiscoHash>>>>,
+    // -- other possible storage items
+    // storage: Arc<Mutex<Storage>>, // partition storage based on data type (red-blue)
+    // pending_requests: Arc<Mutex<HashMap<Key, Sender<Response>>>>, // use libp2p Provider abstraction for pull response interface
+    // is_active: Arc<AtomicBool>, // could make this a more complex config specifying
+                                // nuanced participation in various protocols `Arc<Protocol>`)
+}
+
+// Traits for Node
+// impl WeakSignature for Node {}
+
+// impl StrongSignature for Node {}
