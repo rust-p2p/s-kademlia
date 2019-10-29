@@ -1,35 +1,23 @@
-//! anti-sybil mechanism
-//! for publc keypair generations
-//! vs id genersation
-//! -- and the chosen algorithm for the latter
-
+//! AntiSybilMechanism
+//!
+//! s-kademlia encourages applying a crypto puzzle to NodeId generation
+//! to mitigate DoS-based overflow attacks by new joiners
 use bencher::black_box;
 use bencher::Bencher;
 
-// Ideas (rando)
-// - add bloom filter for finding addresses
-// - add cuckoo hash pow
-// - replace bloom filter for finding addresses, layer with cuckoo hash
-
-fn using_std_time(B: &Bencher) {
-    let super_counter = SteadyTime::now();
+fn leadingzeros_discohash(difficulty: usize, B: &Bencher) {
+    // difficulty will effect timeout
     loop {
-        let new_keypair = ed25519::Keypair::generate(&mut rand::thread_rng());
-        let difficulty: u32 = 5; // number of required trailing zeros
-        let counter = 0u32;
-        let success = true;
-        new_keypair.to_bytes().into_iter().rev().for_each(|i| {
-            if counter < difficulty && i != 0 {
-                success = false;
-            }
-            counter += 1;
-        });
-        if success {
-            return Ok(Keypair(new_keypair));
-        };
-        super_counter += 1;
-        if super_counter > timeout {
-            return Err(AntiSybilError::new("Anti-sybil mechanism timed out"));
-        }
+        // generate NodeId
     }
 }
+
+fn trailingzeros_discohash(difficulty: usize, B: &Bencher) {
+    // difficulty will effect timeout
+    loop {
+        // generate NodeId
+    }
+}
+
+// group them in the same benchmark
+// - notice: this studies the distribution of the output for discohash

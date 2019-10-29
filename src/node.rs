@@ -1,13 +1,9 @@
-//! Node
-//!
-//! - research ways for embedding latency in this section
-//!
-//! ...note that protobufs are used in lieu of peer_ids
-
 use crate::id::NodeId;
 use disco::DiscoHash;
 use std::sync::{Arc, Mutex};
 use crate::store::Table;
+use std::net::IpAddr;
+// - \E async_std::net::IpAddr?
 
 /// *Reputation* (binary status, connected or not)
 ///
@@ -21,20 +17,18 @@ pub enum NodeScore<Status> {
 } // T might represent some object with reputation-based information
 
 #[derive(Clone, Debug)]
-pub struct NodeInfo<Hash> {
-    /// ID of the node.
-    pub id: NodeId<Hash>,
-    /// Network address of the node
-    pub port: String, // same as address? or when is each used?
-                      // Score (reputation) of the node
-                      // pub score: NodeScore,
+pub struct NodeInfo<IpAddr> {
+    /// Identifier
+    pub id: NodeId,
+    /// Address of the node
+    pub addr: IpAddr,
 }
 
 /// Local NodeConfig
 #[derive(Clone)]
 pub struct NodeConfig {
-    node_data: Arc<NodeInfo<DiscoHash>>,
-    routing_table: Arc<Mutex<Table<NodeInfo<DiscoHash>>>>,
+    data: Arc<NodeInfo<IpAddr>>,
+    routing_table: Arc<Mutex<Table<NodeInfo<IpAddr>>>>,
     // -- other possible storage items --
     // storage: Arc<Mutex<Storage>>, // partition storage based on data type (red-blue)
     // pending_requests: Arc<Mutex<HashMap<Key, Sender<Response>>>>, // use libp2p Provider abstraction for pull response interface
@@ -46,3 +40,21 @@ pub struct NodeConfig {
 // impl WeakSignature for Node {}
 
 // impl StrongSignature for Node {}
+
+// ------ METRIC SPACE (distance) ------
+pub trait MetricSpace: Sized {
+    type Metric: Copy + Clone + PartialOrd;
+
+    fn distance(self, other: Self) -> Self::Metric;
+}
+
+// note: distance in libp2p-kad/src/kbucket/key
+// uses uint::U256 for the Metric (as do other impls)
+impl MetricSpace for NodeInfo<IpAddr> {
+    type Metric = NodeId;
+
+    fn distance(self, other: Self) -> Self::Metric {
+        // bitwise xor for the distance
+        self.id.discohash.as_bytes() ^ other.discohash.as_bytes()
+    }
+}

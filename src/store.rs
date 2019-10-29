@@ -19,31 +19,32 @@ const BUCKET_COUNT: usize = 32;
 /// Number of Nodes in a Bucket
 const DEFAULT_NODE_SIZE: usize = 64;
 
-pub struct Table<Hash> {
-    buckets: Vec<Bucket<Hash>>,
+pub struct Table<IpAddr> {
+    buckets: Vec<Bucket<IpAddr>>,
     bucket_count: usize,
 }
 
-pub struct Bucket<Hash> {
-    nodes: VecDeque<NodeInfo<Hash>>,
+pub struct Bucket<IpAddr> {
+    nodes: VecDeque<NodeInfo<IpAddr>>,
     node_count: usize,
 }
 
-impl<Hash> Table<Hash>
+impl<IpAddr> Table<IpAddr>
 where
-    Hash: DiscoHash,
+    // TODO: better type bound here based on chosen ip address format
+    IpAddr: Clone + Copy,
 {
     /// Create a new node table
     ///
     /// -> does table need ownership associated var like this_id?
-    pub fn new(bucket_count: usize, node_count: usize) -> Table<Hash> {
+    pub fn new(bucket_count: usize, node_count: usize) -> Table<IpAddr> {
         Table {
             buckets: (0..bucket_count).map(|_| Bucket::new(node_count)).collect(),
             bucket_count,
         }
     }
 
-    pub fn buckets(&self) -> &Vec<Bucket<Hash>> {
+    pub fn buckets(&self) -> &Vec<Bucket<IpAddr>> {
         &self.buckets
     }
 }
@@ -58,11 +59,12 @@ where
 //
 // - faster to iterate over slice than vec, don't use vecs for all these storage items
 // -- or take some of them by reference
-impl<Hash> Bucket<Hash>
+impl<IpAddr> Bucket<IpAddr>
 where
-    Hash: DiscoHash,
+    // TODO: better type bound
+    IpAddr: Clone + Copy,
 {
-    pub fn new(node_count: usize) -> Bucket<Hash> {
+    pub fn new(node_count: usize) -> Bucket<IpAddr> {
         // should enforce some lower bound for node count here
         Bucket {
             nodes: VecDeque::new(),
@@ -70,7 +72,7 @@ where
         }
     }
 
-    pub fn nodes(&self) -> &VecDeque<NodeInfo<Hash>> {
+    pub fn nodes(&self) -> &VecDeque<NodeInfo<IpAddr>> {
         &self.nodes
     }
 
@@ -81,7 +83,7 @@ where
     /// Update position
     ///
     /// Adds new nodes and places old nodes at the top of the bucket if used
-    pub fn update_node(&mut self, node: &NodeInfo<Hash>) -> bool {
+    pub fn update_node(&mut self, node: &NodeInfo<IpAddr>) -> bool {
         // is there a cleaner way of returning errors based on conditions, like the ensure macro in substrate?
         let full_bucket = self.nodes.len() == node.node_count;
         let in_bucket = self.nodes.contains(&node);
@@ -102,7 +104,7 @@ where
         }
     }
 
-    fn promote_to_top(&mut self, node: NodeInfo<Hash>) {
+    fn promote_to_top(&mut self, node: NodeInfo<IpAddr>) {
         let new_nodes = self
             .nodes
             .into_iter()
@@ -111,9 +113,9 @@ where
         self.nodes = new_nodes;
     }
 
-    pub fn find(&self, id: &NodeId, count: usize) -> Vec<NodeInfo<Hash>> {
+    pub fn find(&self, id: &NodeId, count: usize) -> Vec<NodeInfo<IpAddr>> {
         let mut nodes_copy: Vec<_> = self.nodes.into_iter().map(|n| n.clone()).collect();
-        nodes_copy.sort_by_key(|n| Table::<Hash>::distance(id, &n.id));
+        nodes_copy.sort_by_key(|n| Table::<IpAddr>::distance(id, &n.id));
         nodes_copy[0..cmp::min(count, nodes_copy.len())].to_vec()
     }
 }

@@ -9,12 +9,9 @@ readme = "README.md"
 
 [dependencies]
 bytes = "0.4.12"
-bs58 = "0.3.0"
-uint = "0.8.1"
+rand = "0.7.2"
 zeroize = "1.0.0"
-time = "0.1.42"
-arrayvec = "0.5.1"
-disco = {git = "https://github.com/rust-p2p/disco", default-features = false}
+disco = { path = "../disco" } # amar-review branch
 crossbeam-utils = "0.6.6"
 
 [dependencies.ed25519-dalek]

@@ -1,96 +1,92 @@
 use crate::ed25519;
-use bs58;
-use disco::DiscoHash;
-use std::hash::Hash;
-use std::{convert::TryFrom, fmt, str::FromStr};
-use uint::*; // U256
+use disco::symmetric::DiscoHash;
+// use uint::U256;
+use crate::key::{Keypair, PublicKey}; // KeyPair, PublicKey
+// use std::{convert::TryFrom, fmt, str::FromStr};
 
-/// NodeId Struct
+/// AntiSybilMechanism (wip)
 ///
-/// - wrapper around DiscoHash
-/// - default implements the trait described below
-/// - easy TODO: refactor to make more generic (don't specify DiscoHash)
-pub struct NodeId<T: Hash + Eq + PartialEq + Clone> {
-    pub id: T,
+/// - each variant will require public functions describing
+/// the mechanism in question (with benchmarks in benches/pow)
+pub enum AntiSybilMechanism {
+    TrailingZerosHash(usize), // TODO
+    LeadingZerosHash(usize), // ""
 }
-// default DiscoHash impl below
-// -> can add impl NodeId<MultiHash>
 
-/// The metric for DHT NodeIds
+// TODO: can this just be imported from disco?
+pub fn hash(input: Vec<u8>) -> DiscoHash {
+    let mut h = DiscoHash::new();
+    h.write(input.as_bytes());
+    h.sum()
+}
+
+/// NodeId
 ///
-/// - to separate the ID from the topology logic
-#[derive(Copy, Clone, PartialEq, Eq, Default, PartialOrd, Ord, Debug)]
-pub struct Distance(pub(super) U256);
-// could add impl associated with distance for by default finding the closest k-neighbors?
+/// contains a DiscoHash
+#[derive(Clone, Copy, Debug)]
+pub struct NodeId {
+    discohash: disco::DiscoHash,
+}
 
-impl NodeId<DiscoHash> {
-    /// Builds a `NodeId` from a public key
+impl NodeId {
+    /// Generate NodeId
+    ///
+    /// not sybil resistant by default
     #[inline]
-    fn from_public_key(key: PublicKey) -> NodeId<DiscoHash> {
-        let mut h = DiscoHash::new(32);
-        h.write(pubkey.as_bytes());
-        NodeId { id: h.sum() }
+    pub fn generate(pubkey: PublicKey) -> NodeId {
+        // call more specific generation with None resistance
+        generate_with_resistance(pubkey, None)
+    }
+    
+    /// Validate NodeId
+    ///
+    /// - demonstrates that the node_id is valid
+    /// - TODO: verify generate_with_resistance() generation ;)
+    #[inline]
+    fn validate(&self) -> bool {
+        self.keyhash == hash(self.pubkey)
     }
 
-    /// Checks whether `data` is a valid `NodeId`. if so, returns the `NodeId`. If not,
-    /// returns back the data as an error,
     #[inline]
-    pub fn from_bytes(data: Vec<u8>) -> Result<NodeId<DiscoHash>, Vec<u8>> {
-        let mut h = DiscoHash::new(32);
-        h.write(data.as_bytes());
-        Ok(NodeId { id: h.sum() })
-    }
-
-    /// Turns a `DiscoHash` into a `NodeId`. Dumb simple by construction
-    #[inline]
-    pub fn from_discohash(hash: DiscoHash) -> Result<NodeId<DiscoHash>, DiscoHash> {
-        Ok(NodeId { id: hash })
-    }
-
-    // TODO: useful to generate random NodeId function
-    // - to randomly walk the DHT like R5N (make issue)
-
-    /// TODO: add discohash.as_bytes() method to disco
-    /// ---> do I also want base-58 encoded string?
-
-    /// Default distance by XOR metric
-    pub fn distance<U>(&self, other: &U) -> Distance
-    where
-        U: AsRef<NodeId<DiscoHash>>,
-    {
-        let a = U256::from(self.0.as_ref());
-        let b = U256::from(other.as_ref().0.as_ref());
-        Distance(a ^ b)
+    pub fn random(output_len: usize) -> NodeId {
+        NodeId {
+            discohash: disco::DiscoHash::random(output_len)
+        }
     }
 }
 
-impl From<PublicKey> for NodeId<DiscoHash> {
+impl From<PublicKey> for NodeId {
     #[inline]
     fn from(key: PublicKey) -> NodeId {
-        NodeId::from_public_key(key)
-    }
-}
-
-impl TryFrom<Vec<u8>> for NodeId<DiscoHash> {
-    type Error = Vec<u8>;
-
-    fn try_from(value: Vec<u8>) -> Result<Self, Self::Error> {
-        NodeId::from_bytes(value)
-    }
-}
-
-impl Tryfrom<DiscoHash> for NodeId<DiscoHash> {
-    type Error = DiscoHash;
-
-    fn try_from(data: DiscoHash) -> Result<Self, Self::Error> {
-        NodeId::from_discohash(data)
+        NodeId::generate(key)
     }
 }
 
 // TODO:
-// - PartialEq<NodeId<DiscoHash>> for NodeId<DiscoHash>
-// - PartialEq<NodeId<DiscoHash>> for DiscoHash
-// - AsRef<DiscoHash> for NodeId<DiscoHash>
-// - AsRef<[u8]> for NodeId<DiscoHash>
-// - Into<DiscoHash> for NodeId<DiscoHash>
-// - FromStr for NodeId<DiscoHash>
+// - TryFrom for NodeId
+// - TryFrom<Vec<u8>> for NodeId
+// - PartialEq<NodeId> for NodeId
+// - PartialEq<NodeId> for DiscoHash
+// - AsRef<DiscoHash> for NodeId
+// - AsRef<[u8]> for NodeId
+// - Into<DiscoHash> for NodeId
+// - FromStr for NodeId
+
+/// Generate NodeId with Resistance
+///
+/// as per s-kademlia, applies some resistance to NodeId generation like a decentralized cryptopuzzle
+fn generate_with_resistance(pubkey: PublicKey, anti_sybil: Option<AntiSybilMechanism>) -> NodeId {
+    if let Some(puzzle) = anti_sybil {
+        // match on puzzle
+        // define each outcome as a function
+        todo!()
+    } else {
+        let keyhash = hash(pubkey);
+        return NodeId { keyhash }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    todo!();
+}
