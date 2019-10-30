@@ -41,6 +41,16 @@ impl Error for DecodingError {
     }
 }
 
+/// An error during generation of public keys with hashes that contain `n` trailing/leading zeros
+#[derive(Debug)]
+pub struct TimeOutError;
+
+impl fmt::Display for TimeOutError {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(f, "Timeout trying to hard generate a `NodeId` with some trailing zeros")
+    }
+}
+
 /// An error during signing of a message.
 #[derive(Debug)]
 pub struct SigningError {

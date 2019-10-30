@@ -108,6 +108,7 @@ where
         let new_nodes = self
             .nodes
             .into_iter()
+            // filter instead of retain
             .retain(|n| n != node.id)
             .push_back(node.clone());
         self.nodes = new_nodes;

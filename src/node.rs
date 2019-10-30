@@ -47,14 +47,3 @@ pub trait MetricSpace: Sized {
 
     fn distance(self, other: Self) -> Self::Metric;
 }
-
-// note: distance in libp2p-kad/src/kbucket/key
-// uses uint::U256 for the Metric (as do other impls)
-impl MetricSpace for NodeInfo<IpAddr> {
-    type Metric = NodeId;
-
-    fn distance(self, other: Self) -> Self::Metric {
-        // bitwise xor for the distance
-        self.id.discohash.as_bytes() ^ other.discohash.as_bytes()
-    }
-}
