@@ -1,14 +1,9 @@
 use bs58;
-use disco::DiscoHash;
+use disco::{hash, DiscoHash};
 use time::{Duration, SteadyTime};
 use std::{convert::TryFrom, fmt, str::FromStr};
-use crate::ed25519;
+use crate::ed25519::{PublicKey};
 use crate::error::TimeOutError;
-use crate::key::{Keypair, PublicKey};
-
-// TODO:
-// - get rid of `key.rs`; place all key logic in this file
-// - add key-based tests from keys.rs if deemed necessary
 
 /// NodeId
 ///
@@ -32,7 +27,6 @@ impl fmt::Display for NodeId {
     }
 }
 
-// TODO: does NodeId need to implement some other traits? Probably `Send` at the very least
 unsafe impl Send for NodeId {}
 
 impl NodeId {
@@ -41,9 +35,10 @@ impl NodeId {
     /// Default no hard mechanism for slowing id generation
     #[inline]
     pub fn generate() -> NodeId {
+        // TODO: private key must be stored somewhere for signing messages?
         let key = ed25519::Keypair::generate(&mut rand::thread_rng());
         let keyhash = hash(key.public.to_bytes(), 32);
-        return NodeId { keyhash }
+        return NodeId { discohash: keyhash }
     }
     
     /// Generate NodeId with Resistance
@@ -54,12 +49,12 @@ impl NodeId {
         loop {
             // TODO: replace with generation of PublicKey to hash and then choose an ID
             // - could be more generic, requiring some configuration
-            let new_id = NodeId::generate(pubkey, key_len);
+            let new_id = NodeId::generate();
             // default trailing zeros (remove `rev()` for leading zeros)
-            let disco_iter = new_id.discohash.as_bytes().iter().rev();
+            let disco_iter = new_id.discohash.iter().rev();
             let success = true;
             for i in 0..difficulty {
-                if disco_iter.nth(i) != 0 {
+                if disco_iter.nth(i).unwrap() != &0u8 {
                     success = false;
                 }
             }
@@ -76,16 +71,17 @@ impl NodeId {
 
     #[inline]
     fn digest(&self) -> &[u8] {
-        &self.discohash.sum().as_slice()
+        &self.discohash.as_slice()
     }
 
     #[inline]
-    fn is_public_key(&self, pubkey: PublicKey, key_len: usize) -> bool {
+    fn is_public_key(&self, pubkey: PublicKey) -> bool {
         let ret_val = true;
         let mut counter = 0;
-        let pk_hash = hash(pubkey, key_len).digest().iter();
-        &self.discohash.sum().into_iter().for_each(|i| {
-            if pk_hash.nth(counter) != i {
+        let pk_hash = hash(pubkey.as_bytes(), 32).iter();
+        &self.discohash.into_iter().for_each(|i| {
+            // TODO: unsafe, check equal length first
+            if pk_hash.nth(counter).unwrap() != &i {
                 ret_val = false
             }
             counter += 1;
@@ -103,9 +99,9 @@ impl NodeId {
 
 impl From<PublicKey> for NodeId {
     #[inline]
-    fn from(key: PublicKey) -> NodeId {
-        // TODO: make this a constant? key.len() == 32
-        NodeId::generate(key, 32)
+    fn from(pubkey: PublicKey) -> NodeId {
+        let keyhash = hash(pubkey.as_bytes(), 32);
+        NodeId { discohash: keyhash }
     }
 }
 

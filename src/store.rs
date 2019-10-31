@@ -91,7 +91,6 @@ where
             (true, false) => {
                 // add new kbucket and do any necessary reordering
                 todo!();
-                true
             }
             (false, true) => {
                 // add node to bucket with room

@@ -16,7 +16,6 @@
 
 mod error;
 mod id;
-mod key;
 mod node;
 mod store;
 
