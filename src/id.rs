@@ -1,55 +1,60 @@
-use crate::ed25519;
+use bs58;
 use disco::DiscoHash;
 use time::{Duration, SteadyTime};
+use std::{convert::TryFrom, fmt, str::FromStr};
+use crate::ed25519;
 use crate::error::TimeOutError;
 use crate::key::{Keypair, PublicKey};
-// use std::{convert::TryFrom, fmt, str::FromStr};
 
-// TODO: can this just be imported from disco?
-pub fn hash(input: Vec<u8>) -> DiscoHash {
-    let mut h = DiscoHash::new();
-    h.write(input.as_bytes());
-    h.sum()
-}
+// TODO:
+// - get rid of `key.rs`; place all key logic in this file
+// - add key-based tests from keys.rs if deemed necessary
 
 /// NodeId
 ///
 /// contains a DiscoHash
 #[derive(Clone)]
 pub struct NodeId {
-    discohash: DiscoHash,
+    discohash: Vec<u8>,
+}
+
+impl fmt::Debug for NodeId {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        f.debug_tuple("NodeId")
+            .field(&self.to_base58())
+            .finish()
+    }
+}
+
+impl fmt::Display for NodeId {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        self.to_base58().fmt(f)
+    }
 }
 
 // TODO: does NodeId need to implement some other traits? Probably `Send` at the very least
 unsafe impl Send for NodeId {}
 
 impl NodeId {
-    /// New NodeId
-    ///
-    /// No hardness mechanism for slowing id generation
-    #[inline]
-    fn new(pubkey: PublicKey) -> NodeId {
-        let keyhash = hash(pubkey);
-        return NodeId { keyhash }
-    }
-
     /// Generate NodeId
     ///
-    /// not sybil resistant by default
+    /// Default no hard mechanism for slowing id generation
     #[inline]
-    pub fn generate(pubkey: PublicKey) -> NodeId {
-        NodeId::new(pubkey)
+    pub fn generate() -> NodeId {
+        let key = ed25519::Keypair::generate(&mut rand::thread_rng());
+        let keyhash = hash(key.public.to_bytes(), 32);
+        return NodeId { keyhash }
     }
     
     /// Generate NodeId with Resistance
     ///
     /// - requires hash of `PublicKey` to be have `difficulty` trailing zeros
-    pub fn hard_generate(pubkey: PublicKey, difficulty: usize, timeout: usize) -> Result<NodeId, TimeOutError> {
+    pub fn hard_generate(pubkey: PublicKey, key_len: usize, difficulty: usize, timeout: usize) -> Result<NodeId, TimeOutError> {
         let clock = SteadyTime::now();
         loop {
             // TODO: replace with generation of PublicKey to hash and then choose an ID
             // - could be more generic, requiring some configuration
-            let new_id = NodeId::new(pubkey);
+            let new_id = NodeId::generate(pubkey, key_len);
             // default trailing zeros (remove `rev()` for leading zeros)
             let disco_iter = new_id.discohash.as_bytes().iter().rev();
             let success = true;
@@ -71,12 +76,21 @@ impl NodeId {
 
     #[inline]
     fn digest(&self) -> &[u8] {
-        self.discohash.as_bytes()
+        &self.discohash.sum().as_slice()
     }
 
     #[inline]
-    fn is_public_key(&self, pubkey: &PublicKey) -> bool {
-        self.discohash == hash(pubkey)
+    fn is_public_key(&self, pubkey: PublicKey, key_len: usize) -> bool {
+        let ret_val = true;
+        let mut counter = 0;
+        let pk_hash = hash(pubkey, key_len).digest().iter();
+        &self.discohash.sum().into_iter().for_each(|i| {
+            if pk_hash.nth(counter) != i {
+                ret_val = false
+            }
+            counter += 1;
+        });
+        ret_val
     }
 
     #[inline]
@@ -90,7 +104,8 @@ impl NodeId {
 impl From<PublicKey> for NodeId {
     #[inline]
     fn from(key: PublicKey) -> NodeId {
-        NodeId::generate(key)
+        // TODO: make this a constant? key.len() == 32
+        NodeId::generate(key, 32)
     }
 }
 
@@ -106,5 +121,34 @@ impl From<PublicKey> for NodeId {
 
 #[cfg(test)]
 mod tests {
-    todo!();
+    use crate::{NodeId, id};
+
+    #[test]
+    fn node_id_is_public_key() {
+        let key = id::Keypair::generate().public();
+        let node_id = key.clone().into_node_id();
+        assert_eq!(peer_id.is_public_key(&key), Some(true));
+    }
+
+    #[test]
+    fn peer_id_into_bytes_then_from_bytes() {
+        let peer_id = identity::Keypair::generate_ed25519().public().into_peer_id();
+        let second = PeerId::from_bytes(peer_id.clone().into_bytes()).unwrap();
+        assert_eq!(peer_id, second);
+    }
+
+    #[test]
+    fn peer_id_to_base58_then_back() {
+        let peer_id = identity::Keypair::generate_ed25519().public().into_peer_id();
+        let second: PeerId = peer_id.to_base58().parse().unwrap();
+        assert_eq!(peer_id, second);
+    }
+
+    #[test]
+    fn random_peer_id_is_valid() {
+        for _ in 0 .. 5000 {
+            let peer_id = PeerId::random();
+            assert_eq!(peer_id, PeerId::from_bytes(peer_id.clone().into_bytes()).unwrap());
+        }
+    }
 }

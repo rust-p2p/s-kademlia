@@ -1,5 +1,6 @@
+use crate::id::NodeId;
 use crate::ed25519;
-use crate::error::DecodingError;
+use error::DecodingError;
 use zeroize::Zeroize;
 use rand::{thread_rng, RngCore};
 /// TODO: delete this and just use libp2p
@@ -93,6 +94,11 @@ impl PublicKey {
         ed25519::PublicKey::from_bytes(k)
             .map_err(|e| DecodingError::new("Ed25519 public key").source(e.compat()))
             .map(PublicKey)
+    }
+
+    /// Convert the `PublicKey` into the `NodeId`
+    pub fn into_node_id(self) -> NodeId {
+        self.into()
     }
 }
 

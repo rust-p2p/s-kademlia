@@ -9,10 +9,11 @@ readme = "README.md"
 
 [dependencies]
 bytes = "0.4.12"
+bs58 = "0.3.0"
 rand = "0.7.2"
 time = "0.1.42"
 zeroize = "1.0.0"
-disco = { path = "../disco" } # amar-review branch
+disco = { path = "../disco" }
 crossbeam-utils = "0.6.6"
 
 [dependencies.ed25519-dalek]
@@ -21,8 +22,8 @@ branch = "update-rand"
 
 [dev-dependencies]
 criterion = "0.3.0"
-# quickcheck = "0.9.0"
-# model = "0.1"
+quickcheck = "0.9.0"
+model = "0.1"
 
 [[bench]]
 name = "pow"
