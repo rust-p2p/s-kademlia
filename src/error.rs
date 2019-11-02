@@ -3,8 +3,8 @@ use std::fmt;
 use crate::ed25519::{PublicKey, SecretKey};
 
 // TODO
-// - macro for generating scaffolding for future similar errors
 // - AntiSybilError (error while trying to enforce computational harness via an anti-sybil mechanism)
+// - LengthDisparityError (error while trying to compare two things with different lengths)
 
 /// An error during encoding of key material.
 #[derive(Debug)]

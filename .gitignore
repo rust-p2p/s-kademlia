@@ -1,6 +1,8 @@
 /target
 **/*.rs.bk
 
+examples/
+spec.txt
 todo.md
 refs/
 secrets.md

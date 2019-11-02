@@ -1,49 +1,59 @@
-use crate::id::NodeId;
-use disco::DiscoHash;
-use std::sync::{Arc, Mutex};
-use crate::store::Table;
-use std::net::IpAddr;
-// - \E async_std::net::IpAddr?
-
-/// *Reputation* (binary status, connected or not)
-///
-///
-#[derive(PartialEq, Eq, Debug, Copy, Clone)]
-pub enum NodeScore<Status> {
-    /// The node is considered connected.
-    Connected(Status),
-    /// Node is not connected
-    NotConnected(Status),
-} // T might represent some object with reputation-based information
+use crate::node_id::NodeId;
+use crate::store::{Table, Bucket};
+use std::{sync::{Arc, Mutex}, net::IpAddr};
 
 #[derive(Clone, Debug)]
-pub struct NodeInfo<IpAddr> {
+pub struct NodeInfo {
     /// Identifier
     pub id: NodeId,
-    /// Address of the node
-    pub addr: IpAddr,
+    /// Address
+    pub address: IpAddr,
+    /// Status of the node
+    pub status: NodeStatus,
 }
 
-/// Local NodeConfig
-#[derive(Clone)]
-pub struct NodeConfig {
-    data: Arc<NodeInfo<IpAddr>>,
-    routing_table: Arc<Mutex<Table<NodeInfo<IpAddr>>>>,
-    // -- other possible storage items --
-    // storage: Arc<Mutex<Storage>>, // partition storage based on data type (red-blue)
-    // pending_requests: Arc<Mutex<HashMap<Key, Sender<Response>>>>, // use libp2p Provider abstraction for pull response interface
-    // is_active: Arc<AtomicBool>, // could make this a more complex config specifying
-    // nuanced participation in various protocols `Arc<Protocol>`)
+impl PartialEq<NodeId> for NodeInfo {
+    fn eq(&self, other: NodeId) -> bool {
+        let other_iter = other.discohash.iter();
+        let count: usize = 0;
+        self.discohash.into_iter().for_each(|i| {
+            // bitwise comparison
+            if other_iter.nth(count) != i {
+                return false
+            }
+            count += 1;
+        });
+        true
+    }
 }
 
-// Traits for Node
-// impl WeakSignature for Node {}
+/// Kadelia uses bitwise xor for its metric space
+pub trait XORMetric {
+    type Metric: SimpleArithmetic;
 
-// impl StrongSignature for Node {}
+    fn distance(&self, other: &Self) -> Self::Metric;
+}
 
-// ------ METRIC SPACE (distance) ------
-pub trait MetricSpace: Sized {
-    type Metric: Copy + Clone + PartialOrd;
+impl XORMetric<Vec<u8>> for NodeInfo {
+    fn distance(&self, other: &Self) -> Self::Metric  {
+        // TODO: if lengths are different, return an error
+        let this_node_iter = self.node_id.discohash.iter();
+        let count: usize = 0;
+        let other_iter: Vec<u8> = other.discohash.into_iter().map(|i| {
+            let result_bit = this_node_iter.nth(count) ^ i;
+            count += 1;
+            result_bit
+        }).collect()
+    }
+}
 
-    fn distance(self, other: Self) -> Self::Metric;
+/// Status
+///
+/// reveals connected or not connected status
+#[derive(PartialEq, Eq, Debug, Copy, Clone)]
+pub enum NodeStatus {
+    /// Node is connected.
+    Connected,
+    /// Node is not connected
+    DisConnected,
 }

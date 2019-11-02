@@ -15,7 +15,7 @@
 #![feature(todo_macro)]
 
 mod error;
-mod id;
+mod node_id;
 mod node;
 mod store;
 
