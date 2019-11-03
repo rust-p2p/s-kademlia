@@ -3,13 +3,14 @@ use disco::{hash, DiscoHash};
 use time::{Duration, SteadyTime};
 use std::{convert::{TryFrom, TryInto}, fmt, str::FromStr};
 use crate::ed25519::{Keypair, PublicKey};
-use crate::error::TimeOutError;
+// use crate::error::TimeOutError;
+use crate::node::NodeInfo;
 
 /// NodeId
 ///
 /// - contains a vector of bytes
 /// fn generate() { disco::hash(public_key) }
-#[derive(Clone)]
+#[derive(Clone, Eq, PartialEq)]
 pub struct NodeId {
     discohash: Vec<u8>,
 }
@@ -43,7 +44,7 @@ impl NodeId {
     /// Generate NodeId with Resistance
     ///
     /// Requires disco::hash(public_key) to be have `difficulty` number of trailing zeros
-    pub fn hard_generate(difficulty: usize, timeout: usize) -> Result<NodeId, TimeOutError> {
+    pub fn hard_generate(difficulty: usize, timeout: usize) -> NodeId {
         let clock = SteadyTime::now();
         loop {
             // TODO: replace with generation of PublicKey to hash and then choose an ID
@@ -58,12 +59,13 @@ impl NodeId {
                 }
             }
             if success {
-                return Ok(new_id)
+                return new_id
             }
             //                           converts usize into i64 and panics if doesn't fit
             // TODO: consider if this is best or if I should just pass i64 as an argument
             if SteadyTime::now() - clock > Duration::seconds(timeout.try_into().unwrap()) {
-                return Err(TimeOutError)
+                // TODO: add error type
+                panic!()
             }
         }
     }
@@ -104,6 +106,17 @@ impl NodeId {
         }
     }
 
+    /// Verify Signature
+    ///
+    /// verify message signature made with the public key associated with this NodeId
+    pub fn verify_msg(message: &[u8], signature: &[u8], public_key: &[u8]) -> bool {
+        // change receive type to an error on verifying signatures
+
+        // would need to use the sign method in Node
+        // or take a signature
+        todo!();
+    }
+
     /// Returns a raw bytes representation
     ///
     /// Prefer iteration over this in lieu of discohash
@@ -121,10 +134,53 @@ impl From<PublicKey> for NodeId {
     }
 }
 
+impl PartialEq<NodeInfo> for NodeId {
+    fn eq(&self, other: &NodeInfo) -> bool {
+        *self == other.id
+    }
+}
+
+impl PartialEq<Vec<u8>> for NodeId {
+    fn eq(&self, other: &Vec<u8>) -> bool {
+        self.discohash == *other
+    }
+}
+
+pub trait KadMetric: PartialEq + Eq + Ord + Clone + Send + Sync + fmt::Debug {
+    fn distance(&self, other: &Self) -> Self;
+    fn is_zero(&self) -> bool;
+    fn bits(&self) -> usize;
+} // could also add or separate encoding/decoding
+
+impl KadMetric for Vec<u8> {
+    fn distance(&self, other: &Vec<u8>) -> Vec<u8> {
+        // TODO: check if can use `into_iter` or if it helps
+        self.iter()
+            .zip(other.iter())
+            .map(|(first, second)| first ^ second)
+            .collect()
+    }
+
+    fn is_zero(&self) -> bool {
+        self.iter().all(|d| *d == 0)
+    }
+
+    // for store::NodeTable::bucket_number() based on distance()
+    fn bits(&self) -> usize {
+        let mut bits = self.len() * 8;
+        self.discohash.iter().for_each(|bit| {
+            if *bit == 0 {
+                bits -= 8;
+            } else {
+                return bits - bit.leading_zeros() as usize;
+            }
+        });
+        assert!(bits == 0);
+        0
+    }
+}
+
 // consider impls for...
-// impl TryFrom for NodeId
-// impl PartialEq<Vec<u8>> for NodeId
-// impl PartialEq<NodeId> for NodeId
 // AsRef<[u8]> for NodeId
 // impl FromStr for NodeId
 

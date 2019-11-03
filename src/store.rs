@@ -10,62 +10,85 @@
 //! -- different data store for PeerId membership via Brahms gossip
 use crate::node::{NodeInfo, NodeStatus};
 use crate::node_id::NodeId;
-use disco::hash;
 use std::collections::VecDeque;
 use std::cmp; // for the find method, comparing distances
+// use disco::hash;
 
-/// Number of Buckets in a Table
-const BUCKET_COUNT: usize = 32;
-/// Number of Nodes in a Bucket
-const DEFAULT_NODE_SIZE: usize = 64;
-// TODO: define more methods for Table and Bucket for specific sized stores
+/// Number of Buckets in a NodeTable
+const DEFAULT_BUCKET_COUNT: usize = 32;
+/// Number of Nodes in a NodeBucket
+const DEFAULT_BUCKET_SIZE: usize = 64;
 
-pub struct Table {
-    buckets: Vec<Bucket>,
+pub struct NodeTable {
+    id: NodeId,
+    buckets: Vec<NodeBucket>,
     bucket_count: usize,
 }
 
-pub struct Bucket {
-    nodes: VecDeque<NodeInfo>,
-    node_count: usize,
-}
-
-impl Table {
+impl NodeTable {
     /// Create a new node table
-    ///
-    /// -> does table need ownership associated var like this_id?
-    pub fn new(bucket_count: usize, node_count: usize) -> Table {
-        Table {
-            buckets: (0..bucket_count).map(|_| Bucket::new(node_count)).collect(),
+    pub fn new(this_id: NodeId) -> Self {
+        NodeTable::new_dynamic_table(this_id, DEFAULT_BUCKET_COUNT, DEFAULT_BUCKET_SIZE)
+    }
+
+    pub fn new_dynamic_table(this_id: NodeId, bucket_count: usize, node_count: usize) -> Self {
+        NodeTable {
+            this_id,
+            buckets: (0..bucket_count).map(|_| NodeBucket::new(node_count)).collect(),
             bucket_count,
         }
     }
 
     /// Get buckets
-    pub fn buckets(&self) -> VecDeque<Bucket> {
+    pub fn buckets(&self) -> Vec<NodeBucket> {
         &self.buckets
     }
 
     pub fn bucket_count(&self) -> usize {
-        &self.bucket_count
+        self.bucket_count
     }
 
-    // pub fn update(&self) {
+    fn bucket_number(&self, id: &NodeId) -> usize {
+        let diff = self.id.discohash.distance(id.discohash);
+        assert!(diff != 0);
+        // TODO: this is kind of a placeholder, should be more clear
+        diff.bits() - 1
+    }
 
-    // }
+    pub fn update(&mut self, node: &NodeInfo) -> bool {
+        assert!(node.id != self.id);
+        let bucket = self.bucket_number(&node.id);
+        self.buckets[bucket].update(node)
+    }
 
-    // pub fn find(&self) {
+    pub fn find(&self, id: &NodeId, count: usize) -> Vec<NodeInfo> {
+        assert!(count > 0 && *id != self.id);
 
-    // }
+        let mut nodes_found: Vec<_> = self.buckets.iter().flat_map(|b| &b.nodes)
+                                                    .map(|n| n.clone())
+                                                    .collect();
+        nodes_found.sort_by_key(|n| &n.id.discohash.distance(id.discohash));
+        nodes_found[0..cmp::min(count, nodes_found.len())].to_vec()
+    }
 
-    // pub fn pop_oldest(&self) {
-
-    // }
+    pub fn pop_oldest(&self) -> Vec<NodeInfo> {
+        // TODO: TTL (and more generic) cache
+        self.buckets
+            .iter_mut()
+            .filter(|b| !b.nodes.is_empty() && b.node_count == b.nodes.len())
+            .map(|b| b.nodes.pop_front().unwrap())
+            .collect()
+    }
 }
 
-impl Bucket {
-    pub fn new(node_count: usize) -> Bucket {
-        Bucket {
+pub struct NodeBucket {
+    nodes: VecDeque<NodeInfo>,
+    node_count: usize,
+}
+
+impl NodeBucket {
+    pub fn new(node_count: usize) -> NodeBucket {
+        NodeBucket {
             nodes: VecDeque::new(),
             node_count,
         }
@@ -76,30 +99,20 @@ impl Bucket {
     }
 
     pub fn node_count(&self) -> usize {
-        &self.node_count
-    }
-
-    /// Updates the status of the node referred to by the given key,
-    /// if in the bucket
-    pub fn update_status(&mut self, status: NodeStatus) {
-        // Remove the node from current position and reinsert it
-        // with the desired status, which puts it at the end of either the 
-        // prefix list of disconnected nodes or the suffix list of connected
-        // nodes (most recently disconnected...)
-        if let Some(pos) = self.position(key)
+        self.node_count
     }
 
     /// Update position
     ///
     /// Adds new nodes and places old nodes at the top of the bucket if used
-    pub fn update_node(&mut self, node: &NodeInfo) -> bool {
-        // is there a cleaner way of returning errors based on conditions, like the ensure macro in substrate?
-        let full_bucket = self.nodes.len() == node.node_count();
+    pub fn update(&mut self, node: &NodeInfo) -> bool {
+        let full_bucket = self.nodes.len() == self.node_count;
         let in_bucket = self.nodes.contains(&node);
         match (full_bucket, in_bucket) {
             (true, false) => {
-                // add new kbucket and do any necessary reordering
-                todo!();
+                // TODO: add new kbucket and do any necessary reordering
+                // replace bool return value with Result and specific error type
+                false
             }
             (false, true) => {
                 // add node to bucket with room
@@ -108,13 +121,14 @@ impl Bucket {
             }
             _ => {
                 self.promote_to_top(node.clone());
+                true
             }
         }
     }
 
     fn promote_to_top(&mut self, node: NodeInfo) {
         let new_nodes = self.nodes
-                            .into_iter()
+                            .iter()
                             // take out nodes that aren't this node
                             .filter(|n| n.id != node.id)
                             .collect()
@@ -124,7 +138,7 @@ impl Bucket {
 
     pub fn find(&self, id: &NodeId, count: usize) -> Vec<NodeInfo> {
         let mut nodes_copy: Vec<_> = self.nodes.into_iter().map(|n| n.clone()).collect();
-        nodes_copy.sort_by_key(|n| Table::distance(id, &n.id));
+        nodes_copy.sort_by_key(|n| &n.id.discohash.distance(id.discohash));
         nodes_copy[0..cmp::min(count, nodes_copy.len())].to_vec()
     }
 }

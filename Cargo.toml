@@ -13,6 +13,7 @@ bs58 = "0.3.0"
 rand = "0.7.2"
 time = "0.1.42"
 zeroize = "1.0.0"
+failure = "0.1.6"
 disco = { path = "../disco" }
 crossbeam-utils = "0.6.6"
 
