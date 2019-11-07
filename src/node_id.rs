@@ -12,7 +12,7 @@ use crate::node::NodeInfo;
 /// fn generate() { disco::hash(public_key) }
 #[derive(Clone, Eq, PartialEq)]
 pub struct NodeId {
-    discohash: Vec<u8>,
+    pub discohash: Vec<u8>,
 }
 
 impl fmt::Debug for NodeId {
@@ -51,10 +51,10 @@ impl NodeId {
             // - could be more generic, requiring some configuration
             let new_id = NodeId::generate();
             // default trailing zeros (remove `rev()` for leading zeros)
-            let disco_iter = new_id.discohash.iter().rev();
-            let success = true;
+            //let disco_iter = new_id.discohash.iter().rev();
+            let mut success = true;
             for i in 0..difficulty {
-                if disco_iter.nth(i).unwrap() != &0u8 {
+                if new_id.discohash.get(i).unwrap() != &0u8 {
                     success = false;
                 }
             }
@@ -84,15 +84,8 @@ impl NodeId {
     fn is_public_key(&self, pubkey: PublicKey) -> bool {
         let ret_val = true;
         let mut counter = 0;
-        let pk_hash = hash(pubkey.as_bytes(), 32).iter();
-        &self.discohash.into_iter().for_each(|i| {
-            // TODO: unsafe, check equal length first
-            if pk_hash.nth(counter).unwrap() != &i {
-                ret_val = false
-            }
-            counter += 1;
-        });
-        ret_val
+        let pk_hash = hash(pubkey.as_bytes(), 32);
+        &pk_hash == &self.discohash
     }
 
     /// For Testing Purposes Only
@@ -166,21 +159,26 @@ impl KadMetric for Vec<u8> {
     }
 
     // for store::NodeTable::bucket_number() based on distance()
+    // TODO: where is this found and what can I do with it...
+    // -- replace with byteorder
+    // fn bits(&self) -> usize {
+    //     let mut bits = self.len() * 8;
+    //     self.into_iter().for_each(|b| {
+    //         if *b == 0 {
+    //             bits -= 8;
+    //         } else {
+    //             bits -= (b.leading_zeros() as usize);
+    //         }
+    //     });
+    //     assert!(bits == 0);
+    //     0
+    // }
     fn bits(&self) -> usize {
-        let mut bits = self.len() * 8;
-        self.discohash.iter().for_each(|bit| {
-            if *bit == 0 {
-                bits -= 8;
-            } else {
-                return bits - bit.leading_zeros() as usize;
-            }
-        });
-        assert!(bits == 0);
-        0
+        todo!()
     }
 }
 
-// consider impls for...
+// TODO: consider impls for...
 // AsRef<[u8]> for NodeId
 // impl FromStr for NodeId
 

@@ -20,6 +20,8 @@ mod node;
 mod store;
 
 pub use ed25519_dalek as ed25519;
+use async_std::prelude::*;
+use async_trait::async_trait;
 
 /*
 Implementation Details

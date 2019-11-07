@@ -1,4 +1,4 @@
-use crate::node_id::NodeId;
+use crate::node_id::{NodeId, KadMetric};
 use crate::store::{NodeTable, NodeBucket};
 use std::{sync::{Arc, Mutex}, net::SocketAddr, cmp::PartialEq};
 
@@ -12,15 +12,9 @@ pub struct NodeInfo {
     pub status: NodeStatus,
 }
 
-impl PartialEq<NodeId> for NodeInfo {
-    fn eq(&self, other: &NodeId) -> bool {
-        self.id == *other
-    }
-}
-
 impl PartialEq for NodeInfo {
     fn eq(&self, other: &NodeInfo) -> bool {
-        self.id == other.id
+        self.id == other.id && self.address == other.address && self.status == other.status
     }
 }
 
@@ -33,4 +27,11 @@ pub enum NodeStatus {
     Connected,
     /// Node is not connected
     DisConnected,
+}
+
+#[cfg(test)]
+mod tests {
+    use super::{NodeInfo, NodeStatus};
+
+
 }

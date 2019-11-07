@@ -2,9 +2,11 @@
 //! Configuration for participating in this protocol
 use std::sync::{Arc, Mutex};
 
+// use `efcp/efcp`
+
 /// Local NodeConfig
 #[derive(Clone)]
-pub struct NodeConfig {
+pub struct NodeHandler {
     data: NodeInfo,         // need to be sync
     routing_table: Table,   // need to be sync
     // block_store: BDDB, // use crate::bitswap::BDDB (it is like wrapper around in-memory cache for blocks)
@@ -19,8 +21,6 @@ pub struct NodeConfig {
 
 /// Find method
 /// iterative find method (TODO: use bitswap)
-
-/// use bitswap/strategy for this instead of whatever the fuck I've been doing
 
 // Traits for NodeConfig
 // impl WeakSignature for Node {}
