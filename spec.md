@@ -7,8 +7,6 @@
 
 ## Node
 
-```rust
-
 * must support signing, which should follow this structure
     * `weak (timestramp, ip, port)` `=>`used for `PING` and `FIND_NODE` messages
     * `strong (message)` `=>` used for DHT storage messages
