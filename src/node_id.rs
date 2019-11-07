@@ -1,7 +1,7 @@
 use bs58;
 use disco::{hash, DiscoHash};
 use time::{Duration, SteadyTime};
-use std::{convert::{TryFrom, TryInto}, fmt, str::FromStr};
+use std::{convert::{TryFrom, TryInto}, cmp::Ordering, fmt, str::FromStr};
 use crate::ed25519::{Keypair, PublicKey};
 // use crate::error::TimeOutError;
 use crate::node::NodeInfo;
@@ -10,7 +10,7 @@ use crate::node::NodeInfo;
 ///
 /// - contains a vector of bytes
 /// fn generate() { disco::hash(public_key) }
-#[derive(Clone, Eq, PartialEq)]
+#[derive(Clone, Eq)]
 pub struct NodeId {
     pub discohash: Vec<u8>,
 }
@@ -30,6 +30,18 @@ impl fmt::Display for NodeId {
 }
 
 impl NodeId {
+    /// Builds a `NodeId` from a public key.
+    #[inline]
+    pub fn from_public_key(key: PublicKey) -> NodeId {
+        let keyhash = hash(key.as_bytes(), 32);
+        let new_node = NodeId { discohash: keyhash };
+        // TODO: replace with error
+        if new_node.is_zero() {
+            panic!();
+        }
+        return new_node
+    }
+
     /// Generate NodeId
     ///
     /// Default no hard mechanism for slowing id generation
@@ -38,7 +50,12 @@ impl NodeId {
         // TODO: private key must be stored somewhere for signing messages?
         let key = Keypair::generate(&mut rand::thread_rng());
         let keyhash = hash(key.public.as_bytes(), 32);
-        return NodeId { discohash: keyhash }
+        let new_node = NodeId { discohash: keyhash };
+        // TODO: replace with error
+        if new_node.is_zero() {
+            panic!();
+        }
+        return new_node
     }
     
     /// Generate NodeId with Resistance
@@ -99,6 +116,11 @@ impl NodeId {
         }
     }
 
+    /// Useful for distance metric and node_id generation checks
+    pub fn is_zero(&self) -> bool {
+        self.discohash.iter().all(|d| *d == 0)
+    }
+
     /// Verify Signature
     ///
     /// verify message signature made with the public key associated with this NodeId
@@ -119,11 +141,29 @@ impl NodeId {
     }
 }
 
+impl Ord for NodeId {
+    fn cmp(&self, other: &Self) -> Ordering {
+        self.discohash.cmp(&other.discohash)
+    }
+}
+
+impl PartialOrd for NodeId {
+    fn partial_cmp(&self, other: &Self) -> Option<Ordering> {
+        Some(self.cmp(other))
+    }
+}
+
 impl From<PublicKey> for NodeId {
     #[inline]
     fn from(pubkey: PublicKey) -> NodeId {
         let keyhash = hash(pubkey.as_bytes(), 32);
         NodeId { discohash: keyhash }
+    }
+}
+
+impl PartialEq for NodeId {
+    fn eq(&self, other: &NodeId) -> bool {
+        self.discohash == other.discohash
     }
 }
 
@@ -139,42 +179,18 @@ impl PartialEq<Vec<u8>> for NodeId {
     }
 }
 
-pub trait KadMetric: PartialEq + Eq + Ord + Clone + Send + Sync + fmt::Debug {
+pub trait KadMetric: PartialEq + Clone + fmt::Debug {
     fn distance(&self, other: &Self) -> Self;
-    fn is_zero(&self) -> bool;
-    fn bits(&self) -> usize;
 } // could also add or separate encoding/decoding
 
-impl KadMetric for Vec<u8> {
-    fn distance(&self, other: &Vec<u8>) -> Vec<u8> {
+impl KadMetric for NodeId {
+    fn distance(&self, other: &NodeId) -> NodeId {
         // TODO: check if can use `into_iter` or if it helps
-        self.iter()
-            .zip(other.iter())
-            .map(|(first, second)| first ^ second)
-            .collect()
-    }
-
-    fn is_zero(&self) -> bool {
-        self.iter().all(|d| *d == 0)
-    }
-
-    // for store::NodeTable::bucket_number() based on distance()
-    // TODO: where is this found and what can I do with it...
-    // -- replace with byteorder
-    // fn bits(&self) -> usize {
-    //     let mut bits = self.len() * 8;
-    //     self.into_iter().for_each(|b| {
-    //         if *b == 0 {
-    //             bits -= 8;
-    //         } else {
-    //             bits -= (b.leading_zeros() as usize);
-    //         }
-    //     });
-    //     assert!(bits == 0);
-    //     0
-    // }
-    fn bits(&self) -> usize {
-        todo!()
+        let dist = self.discohash.iter()
+                            .zip(other.discohash.iter())
+                            .map(|(first, second)| first ^ second)
+                            .collect();
+        NodeId { discohash: dist }
     }
 }
 
@@ -184,28 +200,40 @@ impl KadMetric for Vec<u8> {
 
 #[cfg(test)]
 mod tests {
-    use super::{NodeId, KeyPair, PublicKey};
-    use crate::rand;
+    use super::{NodeId, KadMetric};
+    use crate::ed25519::Keypair;
+    use disco::hash;
+    use rand;
 
     #[test]
     fn node_id_is_public_key() {
         let key = Keypair::generate(&mut rand::thread_rng());
-        let node_id = key.public.clone().into();
-        assert_eq!(node_id.is_public_key(&key.public), Some(true));
-    }
-
-    #[test]
-    fn node_id_to_base58_then_back() {
-        let node_id = NodeId::generate();
-        let second: NodeId = node_id.to_base58().parse().unwrap();
-        assert_eq!(node_id, second);
+        let keyhash = hash(key.public.as_bytes(), 32);
+        let node_id = NodeId { discohash: keyhash };
+        assert!(node_id.is_public_key(key.public));
     }
 
     #[test]
     fn random_node_id_is_valid() {
         for _ in 0 .. 5000 {
             let node_id = NodeId::random(32);
-            assert_eq!(node_id, NodeId { node_id.discohash.clone() });
+            let test_node_id = NodeId { discohash: node_id.discohash.clone() };
+            assert_eq!(node_id, test_node_id);
         }
     }
+
+    #[test]
+    fn distance_from_self_is_zero() {
+        let node_id = NodeId::generate();
+        let clone_node_id = node_id.clone();
+        let distance = &node_id.discohash.distance(&clone_node_id.discohash);
+        assert!(distance.is_zero());
+    }
+
+    // #[test]
+    // fn node_id_to_base58_then_back() {
+    //     let node_id = NodeId::generate();
+    //     let second: NodeId = node_id.to_base58().parse().unwrap();
+    //     assert_eq!(node_id, second);
+    // }
 }

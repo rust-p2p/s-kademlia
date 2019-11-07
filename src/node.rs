@@ -12,6 +12,7 @@ pub struct NodeInfo {
     pub status: NodeStatus,
 }
 
+// TODO: is there a way to just check if every field is equal?
 impl PartialEq for NodeInfo {
     fn eq(&self, other: &NodeInfo) -> bool {
         self.id == other.id && self.address == other.address && self.status == other.status
@@ -26,12 +27,12 @@ pub enum NodeStatus {
     /// Node is connected.
     Connected,
     /// Node is not connected
-    DisConnected,
+    Disconnected,
 }
 
 #[cfg(test)]
 mod tests {
     use super::{NodeInfo, NodeStatus};
 
-
+    // test that node status 
 }

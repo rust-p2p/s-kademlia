@@ -18,6 +18,7 @@ const DEFAULT_BUCKET_COUNT: usize = 32;
 /// Number of Nodes in a NodeBucket
 const DEFAULT_BUCKET_SIZE: usize = 64;
 
+#[derive(Clone)]
 pub struct NodeTable {
     id: NodeId,
     buckets: Vec<NodeBucket>,
@@ -48,11 +49,10 @@ impl NodeTable {
     }
 
     fn bucket_number(&self, id: &NodeId) -> usize {
-        let diff = self.id.discohash.distance(&id.discohash);
-
-        assert!(diff.is_zero());
-        // TODO: this is kind of a placeholder, should be more clear
-        diff.bits() - 1
+        let diff = self.id.distance(&id);
+        // TODO: add error instead of this
+        assert!(!diff.is_zero());
+        todo!()
     }
 
     pub fn update(&mut self, node: &NodeInfo) -> bool {
@@ -67,7 +67,7 @@ impl NodeTable {
         let mut nodes_found: Vec<_> = self.buckets.iter().flat_map(|b| &b.nodes)
                                                     .map(|n| n.clone())
                                                     .collect();
-        nodes_found.sort_by_key(|n| n.id.discohash.distance(&id.discohash));
+        nodes_found.sort_by_key(|n| n.id.distance(&id));
         nodes_found[0..cmp::min(count, nodes_found.len())].to_vec()
     }
 
@@ -81,6 +81,7 @@ impl NodeTable {
     }
 }
 
+#[derive(Clone)]
 pub struct NodeBucket {
     // TODO: make into VecDequeue if aligns with eviction policy
     nodes: VecDeque<NodeInfo>,
@@ -141,7 +142,7 @@ impl NodeBucket {
 
     pub fn find(&self, id: &NodeId, count: usize) -> Vec<NodeInfo> {
         let mut nodes_copy: Vec<_> = self.nodes.iter().map(|n| n.clone()).collect();
-        nodes_copy.sort_by_key(|n| n.id.discohash.distance(&id.discohash));
+        nodes_copy.sort_by_key(|n| n.id.distance(&id));
         nodes_copy[0..cmp::min(count, nodes_copy.len())].to_vec()
     }
 }

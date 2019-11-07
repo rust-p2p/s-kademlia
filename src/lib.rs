@@ -1,11 +1,10 @@
-// Copyright 2019 Amar "4meta5" Singh <asinghchrony@protonmail.com>
+// Copyright 2019 4meta5 <asinghchrony@protonmail.com>
 //
 // Licensed under the Apache License, Version 2.0 <LICENSE-APACHE or
 // http://www.apache.org/licenses/LICENSE-2.0> or the MIT license
 // <LICENSE-MIT or http://opensource.org/licenses/MIT>, at your
 // option. This file may not be copied, modified, or distributed
 // except according to those terms.
-//
 
 //! s-kademlia DHT implementation
 //!
@@ -14,10 +13,11 @@
 //! to enhance kademlia with certain security features.
 #![feature(todo_macro)]
 
-mod error;
 mod node_id;
 mod node;
 mod store;
+mod config;
+mod error;
 
 pub use ed25519_dalek as ed25519;
 use async_std::prelude::*;
@@ -33,5 +33,6 @@ Implementation Details
 
 /*
 Managing the mapping between id generation and public key seems like a common problem
-- I propose no anti-sybil mechanism, but make it pluggable (have a function in the file and comment it out? add benches for it)
+- I propose no anti-sybil mechanism, but make it pluggable (have a function in the file 
+and comment it out? add benches for it?
 */

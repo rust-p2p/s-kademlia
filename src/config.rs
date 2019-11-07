@@ -1,6 +1,8 @@
 //!
 //! Configuration for participating in this protocol
 use std::sync::{Arc, Mutex};
+use crate::node::NodeInfo;
+use crate::store::{NodeTable, NodeBucket};
 
 // use `efcp/efcp`
 
@@ -8,7 +10,7 @@ use std::sync::{Arc, Mutex};
 #[derive(Clone)]
 pub struct NodeHandler {
     data: NodeInfo,         // need to be sync
-    routing_table: Table,   // need to be sync
+    routing_table: NodeTable,   // need to be sync
     // block_store: BDDB, // use crate::bitswap::BDDB (it is like wrapper around in-memory cache for blocks)
     // -- other possible storage items --
     // storage: Arc<Mutex<Storage>>, // partition storage based on data type (red-blue)
@@ -19,8 +21,8 @@ pub struct NodeHandler {
 
 // look at service...
 
-/// Find method
-/// iterative find method (TODO: use bitswap)
+// Find method
+// iterative find method (TODO: use bitswap)
 
 // Traits for NodeConfig
 // impl WeakSignature for Node {}
