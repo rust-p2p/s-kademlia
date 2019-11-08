@@ -4,7 +4,7 @@ use time::{Duration, SteadyTime};
 use std::{convert::{TryFrom, TryInto}, cmp::Ordering, fmt, str::FromStr};
 use crate::ed25519::{Keypair, PublicKey};
 use crate::node::NodeInfo;
-use crate::error::ParseError;
+use crate::error::{ParseError, NodeIdGenError};
 
 /// NodeId
 ///
@@ -32,41 +32,40 @@ impl fmt::Display for NodeId {
 impl NodeId {
     /// Builds a `NodeId` from a public key.
     #[inline]
-    pub fn from_public_key(key: PublicKey) -> NodeId {
+    pub fn from_public_key(key: PublicKey) -> Result<NodeId, NodeIdGenError> {
         let keyhash = hash(key.as_bytes(), 32);
         let new_node = NodeId { discohash: keyhash };
-        // TODO: replace with error
-        if new_node.is_zero() {
-            panic!();
+        if new_node.is_zero() { 
+            return Err(NodeIdGenError::PubkeyHashZero) 
+        } else {
+            return Ok(new_node)
         }
-        return new_node
     }
 
     /// Generate NodeId
     ///
     /// Default no hard mechanism for slowing id generation
     #[inline]
-    pub fn generate() -> NodeId {
+    pub fn generate() -> Result<NodeId, NodeIdGenError> {
         // TODO: private key must be stored somewhere for signing messages?
         let key = Keypair::generate(&mut rand::thread_rng());
         let keyhash = hash(key.public.as_bytes(), 32);
         let new_node = NodeId { discohash: keyhash };
-        // TODO: replace with error
-        if new_node.is_zero() {
-            panic!();
+        if new_node.is_zero() { 
+            return Err(NodeIdGenError::PubkeyHashZero) 
+        } else {
+            return Ok(new_node)
         }
-        return new_node
     }
     
     /// Generate NodeId with Resistance
     ///
     /// Requires disco::hash(public_key) to be have `difficulty` number of trailing zeros
-    pub fn hard_generate(difficulty: usize, timeout: usize) -> NodeId {
+    /// TODO: hash should be of some changing shared state for better sybil resistance
+    pub fn hard_generate(difficulty: usize, timeout: usize) -> Result<NodeId, NodeIdGenError> {
         let clock = SteadyTime::now();
         loop {
-            // TODO: replace with generation of PublicKey to hash and then choose an ID
-            // - could be more generic, requiring some configuration
-            let new_id = NodeId::generate();
+            let new_id = NodeId::generate()?;
             // default trailing zeros (remove `rev()` for leading zeros)
             //let disco_iter = new_id.discohash.iter().rev();
             let mut success = true;
@@ -76,13 +75,12 @@ impl NodeId {
                 }
             }
             if success {
-                return new_id
+                return Ok(new_id)
             }
             //                           converts usize into i64 and panics if doesn't fit
             // TODO: consider if this is best or if I should just pass i64 as an argument
             if SteadyTime::now() - clock > Duration::seconds(timeout.try_into().unwrap()) {
-                // TODO: add error type
-                panic!()
+                return Err(NodeIdGenError::HardGenTimeOut)
             }
         }
     }
@@ -90,13 +88,15 @@ impl NodeId {
     #[inline]
     pub fn to_base58(&self) -> String {
         bs58::encode(self.discohash.as_slice()).into_string()
-    } // TODO: add decoding/encoding error
+    }
 
     #[inline]
     fn digest(&self) -> &[u8] {
         &self.discohash.as_slice()
     }
 
+    // TODO: better verification that `data` is a valid `NodeId`
+    // would require logic from `is_public_key`
     #[inline]
     fn from_bytes(data: Vec<u8>) -> Result<NodeId, ParseError> {
         if data.len() != 32 {
