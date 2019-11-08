@@ -28,10 +28,10 @@ pub struct NodeTable {
 impl NodeTable {
     /// Create a new node table
     pub fn new(id: NodeId) -> Self {
-        NodeTable::new_dynamic_table(id, DEFAULT_BUCKET_COUNT, DEFAULT_BUCKET_SIZE)
+        NodeTable::new_custom_table(id, DEFAULT_BUCKET_COUNT, DEFAULT_BUCKET_SIZE)
     }
 
-    pub fn new_dynamic_table(id: NodeId, bucket_count: usize, node_count: usize) -> Self {
+    pub fn new_custom_table(id: NodeId, bucket_count: usize, node_count: usize) -> Self {
         NodeTable {
             id,
             buckets: (0..bucket_count)
@@ -46,14 +46,8 @@ impl NodeTable {
         &self.buckets
     }
 
-    pub fn bucket_count(&self) -> usize {
-        self.bucket_count
-    }
-
     fn bucket_number(&self, id: &NodeId) -> usize {
         let diff = self.id.distance(&id);
-        // TODO: add error instead of this
-        assert!(!diff.is_zero());
         todo!()
     }
 
@@ -72,7 +66,7 @@ impl NodeTable {
             .flat_map(|b| &b.nodes)
             .map(|n| n.clone())
             .collect();
-        nodes_found.sort_by_key(|n| n.id.distance(&id));
+        nodes_found.sort_by_key(|n| n.id.distance(&id).unwrap());
         nodes_found[0..cmp::min(count, nodes_found.len())].to_vec()
     }
 
@@ -148,7 +142,7 @@ impl NodeBucket {
 
     pub fn find(&self, id: &NodeId, count: usize) -> Vec<NodeInfo> {
         let mut nodes_copy: Vec<_> = self.nodes.iter().map(|n| n.clone()).collect();
-        nodes_copy.sort_by_key(|n| n.id.distance(&id));
+        nodes_copy.sort_by_key(|n| n.id.distance(&id).unwrap());
         nodes_copy[0..cmp::min(count, nodes_copy.len())].to_vec()
     }
 }
@@ -167,3 +161,12 @@ impl NodeBucket {
 // -- If it fails to respond, it's evicted and new node is inserted
 // -- else (if it responds), the least recently seen node is moved to the tail
 // of the list, and the new sender's contact is discarded
+
+#[cfg(test)]
+mod tests {
+    // TODO
+    #[test]
+    fn test() {
+        assert!(true)
+    }
+}

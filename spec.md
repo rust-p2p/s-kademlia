@@ -12,6 +12,23 @@
     * `strong (message)` `=>` used for DHT storage messages
 * storage will eventually be partitioned based on the nature of the stored data
 
+### NodeHandler
+
+Eventually, I'd like to partition storage according to the type of data communicated over the network.
+
+**fields I'm considering adding**
+* block_store (like `bitswap::bddb`)
+* use `sled::db`
+* libp2p `Provider` abstraction for pull response interface
+* `Arc<Protocol>`
+
+Signing Trait for NodeConfig with
+* `WeakSignature`
+* `StrongSignature`
+
+Node Discovery
+* iterative, disjoint lookup paths that converge upon the same path
+
 ## Bitswap
 
 A generic data transfer protocol with configurable encoding (first-class support for binary encoding/decoding, not protobufs yet). This is being specified in TLA now.

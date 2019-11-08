@@ -1,5 +1,5 @@
 use crate::ed25519::{Keypair, PublicKey};
-use crate::error::{NodeIdGenError, ParseError};
+use crate::error::{NodeIdGenError, ParseError, DistanceIsZero};
 use crate::node::NodeInfo;
 use bs58;
 use disco::{hash, DiscoHash};
@@ -192,18 +192,27 @@ impl PartialEq<Vec<u8>> for NodeId {
 }
 
 pub trait KadMetric: PartialEq + Clone + fmt::Debug {
-    fn distance(&self, other: &Self) -> Self;
+    type Err;
+
+    fn distance(&self, other: &Self) -> Result<Self, Self::Err>;
 }
 
 impl KadMetric for NodeId {
-    fn distance(&self, other: &NodeId) -> NodeId {
+    type Err = DistanceIsZero;
+
+    fn distance(&self, other: &NodeId) -> Result<NodeId, DistanceIsZero> {
         let dist = self
             .discohash
             .iter()
             .zip(other.discohash.iter())
             .map(|(first, second)| first ^ second)
             .collect();
-        NodeId { discohash: dist }
+        let metric_node = NodeId { discohash: dist };
+        if metric_node.is_zero() {
+            return Err(DistanceIsZero);
+        } else {
+            return Ok(metric_node);
+        }
     }
 }
 
@@ -215,9 +224,24 @@ impl KadMetric for NodeId {
 mod tests {
     use super::{KadMetric, NodeId};
     use crate::ed25519::Keypair;
-    use crate::error::ParseError;
+    use crate::error::{ParseError, DistanceIsZero};
     use disco::hash;
     use rand;
+
+    // TODO: change when error becomes more descriptive
+    // for the moment, all ParseError == ParseError
+    impl PartialEq for ParseError {
+        fn eq(&self, other: &ParseError) -> bool {
+            true
+        }
+    }
+
+    // \A DistanceIsZero == DistanceIsZero
+    impl PartialEq for DistanceIsZero {
+        fn eq(&self, other: &DistanceIsZero) -> bool {
+            true
+        }
+    }
 
     #[test]
     fn node_id_is_public_key() {
@@ -239,11 +263,11 @@ mod tests {
     }
 
     #[test]
-    fn distance_from_self_is_zero() {
+    fn distance_from_self_returns_err() {
         let node_id = NodeId::generate().unwrap();
         let clone_node_id = node_id.clone();
         let distance = &node_id.distance(&clone_node_id);
-        assert!(distance.is_zero());
+        assert_eq!(distance.as_ref().unwrap_err(), &DistanceIsZero);
     }
 
     #[test]
@@ -253,19 +277,24 @@ mod tests {
         assert_eq!(node_id, second);
     }
 
-    // TODO: change when error becomes more descriptive
-    // for the moment, all ParseError == ParseError
-    impl PartialEq for ParseError {
-        fn eq(&self, other: &ParseError) -> bool {
-            true
-        }
-    }
-
     #[test]
     fn incorrect_length_yields_parse_error() {
-        let data = Vec::with_capacity(33);
-        let data2 = Vec::with_capacity(31);
-        assert_eq!(NodeId::from_bytes(data).unwrap_err(), ParseError);
-        assert_eq!(NodeId::from_bytes(data2).unwrap_err(), ParseError);
+        let mut big_data: Vec<u8> = Vec::with_capacity(33);
+        let mut little_data: Vec<u8> = Vec::with_capacity(31);
+        let mut ok_data: Vec<u8> = Vec::with_capacity(32);
+        let too_much = 33;
+        let too_little = 31;
+        let just_right = 32;
+        for i in 0..33 {
+            if i < 32 {
+                ok_data.push(1);
+            } else if i < 31 {
+                little_data.push(1);
+            }
+            big_data.push(1);
+        }
+        assert_eq!(NodeId::from_bytes(big_data).unwrap_err(), ParseError);
+        assert_eq!(NodeId::from_bytes(little_data).unwrap_err(), ParseError);
+        assert!(NodeId::from_bytes(ok_data).is_ok());
     }
 }

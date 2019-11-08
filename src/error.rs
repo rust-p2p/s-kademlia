@@ -25,5 +25,9 @@ pub enum NodeIdGenError {
     HardGenTimeOut,
 }
 
+#[derive(Debug, Fail)]
+#[fail(display = "the calculated distance is zero (comparison with self)")]
+pub struct DistanceIsZero;
+
 // TODO
 // - SigningError
