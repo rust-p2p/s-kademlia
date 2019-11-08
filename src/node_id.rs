@@ -1,14 +1,18 @@
+use crate::ed25519::{Keypair, PublicKey};
+use crate::error::{NodeIdGenError, ParseError};
+use crate::node::NodeInfo;
 use bs58;
 use disco::{hash, DiscoHash};
+use std::{
+    cmp::Ordering,
+    convert::{TryFrom, TryInto},
+    fmt,
+    str::FromStr,
+};
 use time::{Duration, SteadyTime};
-use std::{convert::{TryFrom, TryInto}, cmp::Ordering, fmt, str::FromStr};
-use crate::ed25519::{Keypair, PublicKey};
-use crate::node::NodeInfo;
-use crate::error::{ParseError, NodeIdGenError};
 
 /// NodeId
 ///
-/// - contains a vector of bytes
 /// fn generate() { disco::hash(public_key) }
 #[derive(Clone, Eq)]
 pub struct NodeId {
@@ -17,9 +21,7 @@ pub struct NodeId {
 
 impl fmt::Debug for NodeId {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        f.debug_tuple("NodeId")
-            .field(&self.to_base58())
-            .finish()
+        f.debug_tuple("NodeId").field(&self.to_base58()).finish()
     }
 }
 
@@ -35,10 +37,10 @@ impl NodeId {
     pub fn from_public_key(key: PublicKey) -> Result<NodeId, NodeIdGenError> {
         let keyhash = hash(key.as_bytes(), 32);
         let new_node = NodeId { discohash: keyhash };
-        if new_node.is_zero() { 
-            return Err(NodeIdGenError::PubkeyHashZero) 
+        if new_node.is_zero() {
+            return Err(NodeIdGenError::PubkeyHashZero);
         } else {
-            return Ok(new_node)
+            return Ok(new_node);
         }
     }
 
@@ -51,13 +53,13 @@ impl NodeId {
         let key = Keypair::generate(&mut rand::thread_rng());
         let keyhash = hash(key.public.as_bytes(), 32);
         let new_node = NodeId { discohash: keyhash };
-        if new_node.is_zero() { 
-            return Err(NodeIdGenError::PubkeyHashZero) 
+        if new_node.is_zero() {
+            return Err(NodeIdGenError::PubkeyHashZero);
         } else {
-            return Ok(new_node)
+            return Ok(new_node);
         }
     }
-    
+
     /// Generate NodeId with Resistance
     ///
     /// Requires disco::hash(public_key) to be have `difficulty` number of trailing zeros
@@ -75,12 +77,12 @@ impl NodeId {
                 }
             }
             if success {
-                return Ok(new_id)
+                return Ok(new_id);
             }
             //                           converts usize into i64 and panics if doesn't fit
             // TODO: consider if this is best or if I should just pass i64 as an argument
             if SteadyTime::now() - clock > Duration::seconds(timeout.try_into().unwrap()) {
-                return Err(NodeIdGenError::HardGenTimeOut)
+                return Err(NodeIdGenError::HardGenTimeOut);
             }
         }
     }
@@ -100,7 +102,7 @@ impl NodeId {
     #[inline]
     fn from_bytes(data: Vec<u8>) -> Result<NodeId, ParseError> {
         if data.len() != 32 {
-            return Err(ParseError)
+            return Err(ParseError);
         }
         let new_node = NodeId { discohash: data };
         Ok(new_node)
@@ -116,8 +118,7 @@ impl NodeId {
 
     /// For Testing Purposes Only
     ///
-    /// note: does not generate keypair,
-    /// just generates a random byte array
+    /// Note: does not generate keypair, just generates a random byte array
     #[inline]
     pub fn random(output_len: usize) -> NodeId {
         NodeId {
@@ -192,16 +193,16 @@ impl PartialEq<Vec<u8>> for NodeId {
 
 pub trait KadMetric: PartialEq + Clone + fmt::Debug {
     fn distance(&self, other: &Self) -> Self;
-} // could also add or separate encoding/decoding
+}
 
 impl KadMetric for NodeId {
     fn distance(&self, other: &NodeId) -> NodeId {
-        // TODO: check if can use `into_iter` or if it helps
-        // this is a really bad implementation imo
-        let dist = self.discohash.iter()
-                            .zip(other.discohash.iter())
-                            .map(|(first, second)| first ^ second)
-                            .collect();
+        let dist = self
+            .discohash
+            .iter()
+            .zip(other.discohash.iter())
+            .map(|(first, second)| first ^ second)
+            .collect();
         NodeId { discohash: dist }
     }
 }
@@ -212,8 +213,9 @@ impl KadMetric for NodeId {
 
 #[cfg(test)]
 mod tests {
-    use super::{NodeId, KadMetric};
+    use super::{KadMetric, NodeId};
     use crate::ed25519::Keypair;
+    use crate::error::ParseError;
     use disco::hash;
     use rand;
 
@@ -227,16 +229,18 @@ mod tests {
 
     #[test]
     fn random_node_id_is_valid() {
-        for _ in 0 .. 5000 {
+        for _ in 0..5000 {
             let node_id = NodeId::random(32);
-            let test_node_id = NodeId { discohash: node_id.discohash.clone() };
+            let test_node_id = NodeId {
+                discohash: node_id.discohash.clone(),
+            };
             assert_eq!(node_id, test_node_id);
         }
     }
 
     #[test]
     fn distance_from_self_is_zero() {
-        let node_id = NodeId::generate();
+        let node_id = NodeId::generate().unwrap();
         let clone_node_id = node_id.clone();
         let distance = &node_id.distance(&clone_node_id);
         assert!(distance.is_zero());
@@ -244,8 +248,24 @@ mod tests {
 
     #[test]
     fn to_base58_then_back() {
-        let node_id = NodeId::generate();
+        let node_id = NodeId::generate().unwrap();
         let second: NodeId = node_id.to_base58().parse().unwrap();
         assert_eq!(node_id, second);
+    }
+
+    // TODO: change when error becomes more descriptive
+    // for the moment, all ParseError == ParseError
+    impl PartialEq for ParseError {
+        fn eq(&self, other: &ParseError) -> bool {
+            true
+        }
+    }
+
+    #[test]
+    fn incorrect_length_yields_parse_error() {
+        let data = Vec::with_capacity(33);
+        let data2 = Vec::with_capacity(31);
+        assert_eq!(NodeId::from_bytes(data).unwrap_err(), ParseError);
+        assert_eq!(NodeId::from_bytes(data2).unwrap_err(), ParseError);
     }
 }

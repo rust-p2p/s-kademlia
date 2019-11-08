@@ -14,13 +14,14 @@
 #![feature(todo_macro)]
 
 extern crate failure;
-#[macro_use] extern crate failure_derive;
+#[macro_use]
+extern crate failure_derive;
 
-mod node_id;
-mod node;
-mod store;
 mod config;
 mod error;
+mod node;
+mod node_id;
+mod store;
 
 pub use ed25519_dalek as ed25519;
 
