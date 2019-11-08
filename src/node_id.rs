@@ -3,8 +3,8 @@ use disco::{hash, DiscoHash};
 use time::{Duration, SteadyTime};
 use std::{convert::{TryFrom, TryInto}, cmp::Ordering, fmt, str::FromStr};
 use crate::ed25519::{Keypair, PublicKey};
-// use crate::error::TimeOutError;
 use crate::node::NodeInfo;
+use crate::error::ParseError;
 
 /// NodeId
 ///
@@ -98,6 +98,15 @@ impl NodeId {
     }
 
     #[inline]
+    fn from_bytes(data: Vec<u8>) -> Result<NodeId, ParseError> {
+        if data.len() != 32 {
+            return Err(ParseError)
+        }
+        let new_node = NodeId { discohash: data };
+        Ok(new_node)
+    }
+
+    #[inline]
     fn is_public_key(&self, pubkey: PublicKey) -> bool {
         let ret_val = true;
         let mut counter = 0;
@@ -131,13 +140,15 @@ impl NodeId {
         // or take a signature
         todo!();
     }
+}
 
-    /// Returns a raw bytes representation
-    ///
-    /// Prefer iteration over this in lieu of discohash
+impl FromStr for NodeId {
+    type Err = ParseError;
+
     #[inline]
-    pub fn as_bytes(&self) -> &[u8] {
-        self.discohash.as_slice()
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        let bytes = bs58::decode(s).into_vec()?;
+        NodeId::from_bytes(bytes).map_err(|_| ParseError)
     }
 }
 
@@ -186,6 +197,7 @@ pub trait KadMetric: PartialEq + Clone + fmt::Debug {
 impl KadMetric for NodeId {
     fn distance(&self, other: &NodeId) -> NodeId {
         // TODO: check if can use `into_iter` or if it helps
+        // this is a really bad implementation imo
         let dist = self.discohash.iter()
                             .zip(other.discohash.iter())
                             .map(|(first, second)| first ^ second)
@@ -226,14 +238,14 @@ mod tests {
     fn distance_from_self_is_zero() {
         let node_id = NodeId::generate();
         let clone_node_id = node_id.clone();
-        let distance = &node_id.discohash.distance(&clone_node_id.discohash);
+        let distance = &node_id.distance(&clone_node_id);
         assert!(distance.is_zero());
     }
 
-    // #[test]
-    // fn node_id_to_base58_then_back() {
-    //     let node_id = NodeId::generate();
-    //     let second: NodeId = node_id.to_base58().parse().unwrap();
-    //     assert_eq!(node_id, second);
-    // }
+    #[test]
+    fn to_base58_then_back() {
+        let node_id = NodeId::generate();
+        let second: NodeId = node_id.to_base58().parse().unwrap();
+        assert_eq!(node_id, second);
+    }
 }
