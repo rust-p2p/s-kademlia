@@ -51,14 +51,6 @@ mod tests {
     use super::{NodeInfo, NodeStatus};
     use crate::node_id::NodeId;
     use std::net::{SocketAddr, IpAddr, Ipv4Addr};
+    
 
-    #[test]
-    fn construct_node_info_succeeds() {
-        let socket = SocketAddr::new(IpAddr::V4(Ipv4Addr::new(127, 0, 0, 1)), 8080);
-        let id = NodeId::generate().unwrap();
-        let status = NodeStatus::Connected;
-        let new_node = NodeInfo { id, socket, status };
-        assert_eq!(new_node.port(), 8080);
-        assert_eq!(new_node.ip(), IpAddr::V4(Ipv4Addr::new(127, 0, 0, 1)));
-    }
 }
