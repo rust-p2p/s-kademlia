@@ -1,6 +1,5 @@
 // utilities
-// (1) any traits (added after minimal thing finished)
-
+// (1) any traits (added after minimal impl finished)
 
 // (2) test scaffolding
 #[cfg(test)]

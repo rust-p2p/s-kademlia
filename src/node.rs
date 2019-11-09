@@ -51,6 +51,11 @@ mod tests {
     use super::{NodeInfo, NodeStatus};
     use crate::node_id::NodeId;
     use std::net::{SocketAddr, IpAddr, Ipv4Addr};
-    
+    // import test scaffolding
+    use crate::util::test::*;
 
+    #[test]
+    fn to_do() {
+        assert!(true);
+    }
 }

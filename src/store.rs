@@ -1,13 +1,4 @@
 //! Storage (Routing Table)
-//! to be abstracted into more modular storage traits
-//! - see dynamic-sized arrays vs static routing tables
-//! (overarching goal is to partition DHT based on data type)
-//! - should use associated `PROVIDER` abstraction from libp2p
-//!
-//! Long-Term TODO: abstract storage containers into traits and macros like in Substrate
-//! -- vision is a network topology that adapts according to voting/gossip by nodes
-//! -- different data store for bloom filter cache for r5n
-//! -- different data store for PeerId membership via Brahms gossip
 use crate::node::{NodeInfo, NodeStatus};
 use crate::node_id::{KadMetric, NodeId};
 use std::{cmp, collections::VecDeque};
@@ -148,21 +139,6 @@ impl NodeBucket {
         nodes_copy[0..cmp::min(count, nodes_copy.len())].to_vec()
     }
 }
-
-// Eviction Policy
-//
-// TODO: least-recently seen eviction policy, except live nodes are never removed from the list
-// When a kademlia node receives any message (request or reply)
-// from another node, it updates the appropriate k-bucket for the sender's
-// nodeID.
-// - If the sending node already exists in the recipient's k-bucket and the bucket
-// has fewer than k entries, then the recipient just inserts the new sender at the tail
-// of the list.
-// - If the appropriate k-bucket is full, then the recipient pings the k-bucket's
-// least recently seen node.
-// -- If it fails to respond, it's evicted and new node is inserted
-// -- else (if it responds), the least recently seen node is moved to the tail
-// of the list, and the new sender's contact is discarded
 
 #[cfg(test)]
 mod tests {
