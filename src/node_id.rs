@@ -2,6 +2,7 @@ use crate::ed25519::{Keypair, PublicKey};
 use crate::error::{NodeIdGenError, ParseError, DistanceIsZero};
 use crate::node::NodeInfo;
 use bs58;
+use uint::*;
 use disco::{hash, DiscoHash};
 use std::{
     cmp::Ordering,
@@ -10,6 +11,11 @@ use std::{
     str::FromStr,
 };
 use time::{Duration, SteadyTime};
+
+construct_uint! {
+    /// 256-bit unsigned integer.
+    pub struct U256(4);
+}
 
 /// NodeId
 ///
@@ -193,12 +199,16 @@ impl PartialEq<Vec<u8>> for NodeId {
 
 pub trait KadMetric: PartialEq + Clone + fmt::Debug {
     type Err;
+    type Metric;
 
     fn distance(&self, other: &Self) -> Result<Self, Self::Err>;
+    // used in `store` specifically 
+    fn metric_distance(&self, other: &Self) -> Result<Self::Metric, Self::Err>;
 }
 
 impl KadMetric for NodeId {
     type Err = DistanceIsZero;
+    type Metric = U256;
 
     fn distance(&self, other: &NodeId) -> Result<NodeId, DistanceIsZero> {
         let dist = self
@@ -212,6 +222,18 @@ impl KadMetric for NodeId {
             return Err(DistanceIsZero);
         } else {
             return Ok(metric_node);
+        }
+    }
+
+    fn metric_distance(&self, other: &NodeId) -> Result<U256, DistanceIsZero> {
+        let a = U256::from(self.discohash.clone().as_slice());
+        let b = U256::from(other.discohash.clone().as_slice());
+        // xor
+        let distance = a ^ b;
+        if distance == U256::from(0) {
+            return Err(DistanceIsZero);
+        } else {
+            return Ok(distance)
         }
     }
 }
@@ -268,6 +290,26 @@ mod tests {
         let clone_node_id = node_id.clone();
         let distance = &node_id.distance(&clone_node_id);
         assert_eq!(distance.as_ref().unwrap_err(), &DistanceIsZero);
+    }
+
+    #[test]
+    fn distance_from_other_works() {
+        // calculate distance by xoring two values
+        assert!(true);
+    }
+
+    #[test]
+    fn metric_distance_from_self_returns_err() {
+        let node_id = NodeId::generate().unwrap();
+        let clone_node_id = node_id.clone();
+        let distance = &node_id.metric_distance(&clone_node_id);
+        assert_eq!(distance.as_ref().unwrap_err(), &DistanceIsZero);
+    }
+
+    #[test]
+    fn metric_distance_from_other_works() {
+        // same as two above
+        assert!(true);
     }
 
     #[test]

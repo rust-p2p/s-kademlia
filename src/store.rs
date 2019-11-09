@@ -2,6 +2,7 @@
 use crate::node::{NodeInfo, NodeStatus};
 use crate::node_id::{KadMetric, NodeId};
 use std::{cmp, collections::VecDeque};
+use crate::error::DistanceIsZero; // TODO: add more descriptive error handling to tell what file
 // use disco::hash;
 
 /// Number of Buckets in a NodeTable
@@ -9,11 +10,12 @@ const DEFAULT_BUCKET_COUNT: usize = 32;
 /// Number of Nodes in a NodeBucket
 const DEFAULT_BUCKET_SIZE: usize = 64;
 
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 pub struct NodeTable {
+    /// The `NodeId` identifying the local peer that owns the routing table
     pub id: NodeId,
+    /// The buckets comprising the routing table
     pub buckets: Vec<NodeBucket>,
-    pub bucket_count: usize,
 }
 
 impl NodeTable {
@@ -28,7 +30,6 @@ impl NodeTable {
             buckets: (0..bucket_count)
                 .map(|_| NodeBucket::new(node_count))
                 .collect(),
-            bucket_count,
         }
     }
 
@@ -37,14 +38,17 @@ impl NodeTable {
         &self.buckets
     }
 
-    fn bucket_number(&self, id: &NodeId) -> usize {
-        let diff = self.id.distance(&id);
-        todo!()
+    fn bucket_index(&self, id: &NodeId) -> Result<usize, DistanceIsZero> {
+        let diff = self.id.metric_distance(&id)?;
+        // this error returned from `ok_or` is actually inaccurate
+        let index = (self.buckets.len() - diff.leading_zeros() as usize).checked_sub(1).ok_or(DistanceIsZero);
+        index
     }
 
+    // TODO: add better error handling
     pub fn update(&mut self, node: &NodeInfo) -> bool {
         assert!(node.id != self.id);
-        let bucket = self.bucket_number(&node.id);
+        let bucket = self.bucket_index(&node.id).unwrap();
         self.buckets[bucket].update(node)
     }
 
@@ -71,7 +75,7 @@ impl NodeTable {
     }
 }
 
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 pub struct NodeBucket {
     // TODO: make into VecDequeue if aligns with eviction policy
     pub nodes: VecDeque<NodeInfo>,

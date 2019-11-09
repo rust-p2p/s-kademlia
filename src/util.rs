@@ -1,5 +1,5 @@
-// utilities
-// (1) any traits (added after minimal impl finished)
+//! utilities
+//! (1) TODO: abstract behavior into traits here
 
 // (2) test scaffolding
 #[cfg(test)]
