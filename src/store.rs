@@ -20,9 +20,9 @@ const DEFAULT_BUCKET_SIZE: usize = 64;
 
 #[derive(Clone)]
 pub struct NodeTable {
-    id: NodeId,
-    buckets: Vec<NodeBucket>,
-    bucket_count: usize,
+    pub id: NodeId,
+    pub buckets: Vec<NodeBucket>,
+    pub bucket_count: usize,
 }
 
 impl NodeTable {
@@ -83,8 +83,8 @@ impl NodeTable {
 #[derive(Clone)]
 pub struct NodeBucket {
     // TODO: make into VecDequeue if aligns with eviction policy
-    nodes: VecDeque<NodeInfo>,
-    node_count: usize,
+    pub nodes: VecDeque<NodeInfo>,
+    pub node_count: usize,
 }
 
 impl NodeBucket {
@@ -140,8 +140,10 @@ impl NodeBucket {
         self.nodes = all_nodes;
     }
 
+    // TODO: only include count if searching for multiple ids
     pub fn find(&self, id: &NodeId, count: usize) -> Vec<NodeInfo> {
         let mut nodes_copy: Vec<_> = self.nodes.iter().map(|n| n.clone()).collect();
+        // TODO: propagate `found_self` error
         nodes_copy.sort_by_key(|n| n.id.distance(&id).unwrap());
         nodes_copy[0..cmp::min(count, nodes_copy.len())].to_vec()
     }
@@ -164,9 +166,9 @@ impl NodeBucket {
 
 #[cfg(test)]
 mod tests {
-    // TODO
-    #[test]
-    fn test() {
-        assert!(true)
-    }
+    use super::{NodeTable, NodeBucket};
+    use crate::node::NodeInfo;
+    use crate::node_id::{NodeId, KadMetric};
+    
+    // test find_on_self_errs
 }
