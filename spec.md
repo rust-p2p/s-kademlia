@@ -1,5 +1,10 @@
 # spec
 
+The DHT needs to provide the following mappings:
+* `NodeId` `=>` `addr`, `port`
+* `writers` `=>` `[peer_id]`
+* `cid` `=>` `[peer_id]`
+
 ## NodeId
 
 * `node_id` is like `libp2p/core/peer_id` but it strives to offer first-class support for anti-sybil mechanisms to slow id generation. I eventually want the proof of work method to be configurable based on some defined shared state (like the blockchain pow algorithm), but this is not my first priority.

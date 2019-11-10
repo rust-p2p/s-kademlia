@@ -238,10 +238,6 @@ impl KadMetric for NodeId {
     }
 }
 
-// TODO: consider impls for...
-// AsRef<[u8]> for NodeId
-// impl FromStr for NodeId
-
 #[cfg(test)]
 mod tests {
     use super::{KadMetric, NodeId};
@@ -285,31 +281,27 @@ mod tests {
     }
 
     #[test]
-    fn distance_from_self_returns_err() {
+    fn distance_works() {
         let node_id = NodeId::generate().unwrap();
         let clone_node_id = node_id.clone();
         let distance = &node_id.distance(&clone_node_id);
+        let new_node_id = NodeId::generate().unwrap();
+        let distance2 = &node_id.distance(&new_node_id);
         assert_eq!(distance.as_ref().unwrap_err(), &DistanceIsZero);
+        // assert!(distance2.as_ref().unwrap() != &DistanceIsZero); // if uncommented, compiler error below generated `=>` ok I guess
+        //                                      ^^ no implementation for `node_id::NodeId == error::DistanceIsZero`
     }
 
     #[test]
-    fn distance_from_other_works() {
-        // calculate distance by xoring two values
-        assert!(true);
-    }
-
-    #[test]
-    fn metric_distance_from_self_returns_err() {
+    fn metric_distance_works() {
         let node_id = NodeId::generate().unwrap();
         let clone_node_id = node_id.clone();
         let distance = &node_id.metric_distance(&clone_node_id);
+        let new_node_id = NodeId::generate().unwrap();
+        let distance2 = &node_id.distance(&new_node_id);
         assert_eq!(distance.as_ref().unwrap_err(), &DistanceIsZero);
-    }
-
-    #[test]
-    fn metric_distance_from_other_works() {
-        // same as two above
-        assert!(true);
+        // assert!(distance2.as_ref().unwrap() != &DistanceIsZero); // if uncommented, compiler error below generated `=>` ok I guess
+        //                                      ^^ no implementation for `node_id::NodeId == error::DistanceIsZero`
     }
 
     #[test]

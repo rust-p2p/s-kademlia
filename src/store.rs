@@ -2,8 +2,7 @@
 use crate::node::{NodeInfo, NodeStatus};
 use crate::node_id::{KadMetric, NodeId};
 use std::{cmp, collections::VecDeque};
-use crate::error::DistanceIsZero; // TODO: add more descriptive error handling to tell what file
-// use disco::hash;
+use crate::error::DistanceIsZero;
 
 /// Number of Buckets in a NodeTable
 const DEFAULT_BUCKET_COUNT: usize = 32;
@@ -45,7 +44,6 @@ impl NodeTable {
         index
     }
 
-    // TODO: add better error handling
     pub fn update(&mut self, node: &NodeInfo) -> bool {
         assert!(node.id != self.id);
         let bucket = self.bucket_index(&node.id).unwrap();
@@ -66,7 +64,6 @@ impl NodeTable {
     }
 
     pub fn pop_oldest(&mut self) -> Vec<NodeInfo> {
-        // TODO: TTL (and more generic) cache
         self.buckets
             .iter_mut()
             .filter(|b| !b.nodes.is_empty() && b.node_count == b.nodes.len())
@@ -77,7 +74,6 @@ impl NodeTable {
 
 #[derive(Clone, Debug)]
 pub struct NodeBucket {
-    // TODO: make into VecDequeue if aligns with eviction policy
     pub nodes: VecDeque<NodeInfo>,
     pub node_count: usize,
 }
@@ -107,7 +103,7 @@ impl NodeBucket {
         match (full_bucket, in_bucket) {
             (true, false) => {
                 // TODO: add new kbucket and do any necessary reordering
-                // replace bool return value with Result and specific error type
+                // replace bool return value with Result and specific error type?
                 false
             }
             (false, true) => {
@@ -138,7 +134,7 @@ impl NodeBucket {
     // TODO: only include count if searching for multiple ids
     pub fn find(&self, id: &NodeId, count: usize) -> Vec<NodeInfo> {
         let mut nodes_copy: Vec<_> = self.nodes.iter().map(|n| n.clone()).collect();
-        // TODO: propagate `found_self` error
+        // TODO: propagate `found_self` error instead of unwrapping
         nodes_copy.sort_by_key(|n| n.id.distance(&id).unwrap());
         nodes_copy[0..cmp::min(count, nodes_copy.len())].to_vec()
     }
@@ -149,6 +145,6 @@ mod tests {
     use super::{NodeTable, NodeBucket};
     use crate::node::NodeInfo;
     use crate::node_id::{NodeId, KadMetric};
-    
-    // test find_on_self_errs
+
+    // TODO
 }

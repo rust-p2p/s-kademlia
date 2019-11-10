@@ -16,7 +16,6 @@ pub struct NodeInfo {
     pub status: NodeStatus,
 }
 
-// TODO: is there a way to just check if every field is equal?
 impl PartialEq for NodeInfo {
     fn eq(&self, other: &NodeInfo) -> bool {
         self.id == other.id && self.socket == other.socket && self.status == other.status
@@ -54,8 +53,5 @@ mod tests {
     // import test scaffolding
     use crate::util::test::*;
 
-    #[test]
-    fn to_do() {
-        assert!(true);
-    }
+    // TODO
 }

@@ -1,4 +1,4 @@
-//! Configuration for participating in this protocol
+//! Handler for Participating Nodes
 use crate::node::NodeInfo;
 use crate::store::{NodeBucket, NodeTable};
 use std::sync::{Arc, RwLock};
