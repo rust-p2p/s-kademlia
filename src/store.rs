@@ -1,8 +1,8 @@
 //! Storage (Routing Table)
+use crate::error::DistanceIsZero;
 use crate::node::{NodeInfo, NodeStatus};
 use crate::node_id::{KadMetric, NodeId};
 use std::{cmp, collections::VecDeque};
-use crate::error::DistanceIsZero;
 
 /// Number of Buckets in a NodeTable
 const DEFAULT_BUCKET_COUNT: usize = 32;
@@ -40,7 +40,9 @@ impl NodeTable {
     fn bucket_index(&self, id: &NodeId) -> Result<usize, DistanceIsZero> {
         let diff = self.id.metric_distance(&id)?;
         // this error returned from `ok_or` is actually inaccurate
-        let index = (self.buckets.len() - diff.leading_zeros() as usize).checked_sub(1).ok_or(DistanceIsZero);
+        let index = (self.buckets.len() - diff.leading_zeros() as usize)
+            .checked_sub(1)
+            .ok_or(DistanceIsZero);
         index
     }
 
@@ -142,9 +144,9 @@ impl NodeBucket {
 
 #[cfg(test)]
 mod tests {
-    use super::{NodeTable, NodeBucket};
+    use super::{NodeBucket, NodeTable};
     use crate::node::NodeInfo;
-    use crate::node_id::{NodeId, KadMetric};
+    use crate::node_id::{KadMetric, NodeId};
 
     // TODO
 }

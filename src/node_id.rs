@@ -1,8 +1,7 @@
 use crate::ed25519::{Keypair, PublicKey};
-use crate::error::{NodeIdGenError, ParseError, DistanceIsZero};
+use crate::error::{DistanceIsZero, ParseError};
 use crate::node::NodeInfo;
 use bs58;
-use uint::*;
 use disco::{hash, DiscoHash};
 use std::{
     cmp::Ordering,
@@ -10,7 +9,7 @@ use std::{
     fmt,
     str::FromStr,
 };
-use time::{Duration, SteadyTime};
+use uint::*;
 
 construct_uint! {
     /// 256-bit unsigned integer.
@@ -40,55 +39,38 @@ impl fmt::Display for NodeId {
 impl NodeId {
     /// Builds a `NodeId` from a public key.
     #[inline]
-    pub fn from_public_key(key: PublicKey) -> Result<NodeId, NodeIdGenError> {
+    pub fn from_public_key(key: PublicKey) -> NodeId {
         let keyhash = hash(key.as_bytes(), 32);
-        let new_node = NodeId { discohash: keyhash };
-        if new_node.is_zero() {
-            return Err(NodeIdGenError::PubkeyHashZero);
-        } else {
-            return Ok(new_node);
-        }
+        NodeId { discohash: keyhash }
     }
 
     /// Generate NodeId
     ///
     /// Default no hard mechanism for slowing id generation
     #[inline]
-    pub fn generate() -> Result<NodeId, NodeIdGenError> {
+    pub fn generate() -> NodeId {
         // TODO: private key must be stored somewhere for signing messages?
         let key = Keypair::generate(&mut rand::thread_rng());
         let keyhash = hash(key.public.as_bytes(), 32);
-        let new_node = NodeId { discohash: keyhash };
-        if new_node.is_zero() {
-            return Err(NodeIdGenError::PubkeyHashZero);
-        } else {
-            return Ok(new_node);
-        }
+        NodeId { discohash: keyhash }
     }
 
     /// Generate NodeId with Resistance
     ///
     /// Requires disco::hash(public_key) to be have `difficulty` number of trailing zeros
-    /// TODO: hash should be of some changing shared state for better sybil resistance
-    pub fn hard_generate(difficulty: usize, timeout: usize) -> Result<NodeId, NodeIdGenError> {
-        let clock = SteadyTime::now();
+    /// WARNING: loop could keep running for a long time (no benchmarking done yet)
+    pub fn hard_generate(difficulty: usize) -> NodeId {
         loop {
-            let new_id = NodeId::generate()?;
-            // default trailing zeros (remove `rev()` for leading zeros)
-            //let disco_iter = new_id.discohash.iter().rev();
+            let new_id = NodeId::generate();
             let mut success = true;
+            // default leading zeros
             for i in 0..difficulty {
                 if new_id.discohash.get(i).unwrap() != &0u8 {
                     success = false;
                 }
             }
             if success {
-                return Ok(new_id);
-            }
-            //                           converts usize into i64 and panics if doesn't fit
-            // TODO: consider if this is best or if I should just pass i64 as an argument
-            if SteadyTime::now() - clock > Duration::seconds(timeout.try_into().unwrap()) {
-                return Err(NodeIdGenError::HardGenTimeOut);
+                return new_id;
             }
         }
     }
@@ -116,20 +98,8 @@ impl NodeId {
 
     #[inline]
     fn is_public_key(&self, pubkey: PublicKey) -> bool {
-        let ret_val = true;
-        let mut counter = 0;
         let pk_hash = hash(pubkey.as_bytes(), 32);
         &pk_hash == &self.discohash
-    }
-
-    /// For Testing Purposes Only
-    ///
-    /// Note: does not generate keypair, just generates a random byte array
-    #[inline]
-    pub fn random(output_len: usize) -> NodeId {
-        NodeId {
-            discohash: DiscoHash::random(output_len),
-        }
     }
 
     /// Useful for distance metric and node_id generation checks
@@ -202,7 +172,7 @@ pub trait KadMetric: PartialEq + Clone + fmt::Debug {
     type Metric;
 
     fn distance(&self, other: &Self) -> Result<Self, Self::Err>;
-    // used in `store` specifically 
+    // used in `store` specifically
     fn metric_distance(&self, other: &Self) -> Result<Self::Metric, Self::Err>;
 }
 
@@ -233,7 +203,7 @@ impl KadMetric for NodeId {
         if distance == U256::from(0) {
             return Err(DistanceIsZero);
         } else {
-            return Ok(distance)
+            return Ok(distance);
         }
     }
 }
@@ -242,7 +212,7 @@ impl KadMetric for NodeId {
 mod tests {
     use super::{KadMetric, NodeId};
     use crate::ed25519::Keypair;
-    use crate::error::{ParseError, DistanceIsZero};
+    use crate::error::{DistanceIsZero, ParseError};
     use disco::hash;
     use rand;
 
@@ -270,22 +240,11 @@ mod tests {
     }
 
     #[test]
-    fn random_node_id_is_valid() {
-        for _ in 0..5000 {
-            let node_id = NodeId::random(32);
-            let test_node_id = NodeId {
-                discohash: node_id.discohash.clone(),
-            };
-            assert_eq!(node_id, test_node_id);
-        }
-    }
-
-    #[test]
     fn distance_works() {
-        let node_id = NodeId::generate().unwrap();
+        let node_id = NodeId::generate();
         let clone_node_id = node_id.clone();
         let distance = &node_id.distance(&clone_node_id);
-        let new_node_id = NodeId::generate().unwrap();
+        let new_node_id = NodeId::generate();
         let distance2 = &node_id.distance(&new_node_id);
         assert_eq!(distance.as_ref().unwrap_err(), &DistanceIsZero);
         // assert!(distance2.as_ref().unwrap() != &DistanceIsZero); // if uncommented, compiler error below generated `=>` ok I guess
@@ -294,10 +253,10 @@ mod tests {
 
     #[test]
     fn metric_distance_works() {
-        let node_id = NodeId::generate().unwrap();
+        let node_id = NodeId::generate();
         let clone_node_id = node_id.clone();
         let distance = &node_id.metric_distance(&clone_node_id);
-        let new_node_id = NodeId::generate().unwrap();
+        let new_node_id = NodeId::generate();
         let distance2 = &node_id.distance(&new_node_id);
         assert_eq!(distance.as_ref().unwrap_err(), &DistanceIsZero);
         // assert!(distance2.as_ref().unwrap() != &DistanceIsZero); // if uncommented, compiler error below generated `=>` ok I guess
@@ -306,27 +265,16 @@ mod tests {
 
     #[test]
     fn to_base58_then_back() {
-        let node_id = NodeId::generate().unwrap();
+        let node_id = NodeId::generate();
         let second: NodeId = node_id.to_base58().parse().unwrap();
         assert_eq!(node_id, second);
     }
 
     #[test]
     fn incorrect_length_yields_parse_error() {
-        let mut big_data: Vec<u8> = Vec::with_capacity(33);
-        let mut little_data: Vec<u8> = Vec::with_capacity(31);
-        let mut ok_data: Vec<u8> = Vec::with_capacity(32);
-        let too_much = 33;
-        let too_little = 31;
-        let just_right = 32;
-        for i in 0..33 {
-            if i < 32 {
-                ok_data.push(1);
-            } else if i < 31 {
-                little_data.push(1);
-            }
-            big_data.push(1);
-        }
+        let mut big_data = vec![1u8; 33];
+        let mut little_data = vec![1u8; 31];
+        let mut ok_data = vec![1u8; 32];
         assert_eq!(NodeId::from_bytes(big_data).unwrap_err(), ParseError);
         assert_eq!(NodeId::from_bytes(little_data).unwrap_err(), ParseError);
         assert!(NodeId::from_bytes(ok_data).is_ok());

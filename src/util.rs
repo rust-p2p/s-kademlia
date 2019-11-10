@@ -1,14 +1,29 @@
 //! utilities
-//! (1) TODO: abstract behavior into traits here
+use crate::node_id::NodeId;
+use disco::DiscoHash;
+
+// should be useful for testing purposes
+pub trait Random<T> {
+    fn random(len: usize) -> T;
+}
+
+impl Random<NodeId> for NodeId {
+    // Note: does not generate keypair, just generates a random byte array
+    fn random(len: usize) -> NodeId {
+        NodeId {
+            discohash: DiscoHash::random(len),
+        }
+    }
+}
 
 // (2) test scaffolding
 #[cfg(test)]
 pub mod test {
-    use std::net::{SocketAddr, IpAddr, Ipv4Addr};
-    use std::collections::VecDeque;
-    use crate::node_id::NodeId;
-    use crate::store::{NodeTable, NodeBucket};
     use crate::node::{NodeInfo, NodeStatus};
+    use crate::node_id::NodeId;
+    use crate::store::{NodeBucket, NodeTable};
+    use std::collections::VecDeque;
+    use std::net::{IpAddr, Ipv4Addr, SocketAddr};
 
     pub static ADDR: &'static str = "127.0.0.1:8008";
 
@@ -22,17 +37,20 @@ pub mod test {
 
     #[test]
     fn new_node_info_succeeds() {
-        let id = NodeId::generate().unwrap();
+        let id = NodeId::generate();
         let new_node = new_node_info(id);
         assert_eq!(new_node.port(), 8080);
         assert_eq!(new_node.ip(), IpAddr::V4(Ipv4Addr::new(127, 0, 0, 1)));
     }
 
     fn new_node_bucket(node_count: usize) -> NodeBucket {
-        let mut bucket = NodeBucket { nodes: VecDeque::new(), node_count };
+        let mut bucket = NodeBucket {
+            nodes: VecDeque::new(),
+            node_count,
+        };
         // should prevent duplicate NodeId generation eventually
         for i in 0..node_count {
-            let id = NodeId::generate().unwrap();
+            let id = NodeId::generate();
             let new_node = new_node_info(id);
             bucket.nodes.push_back(new_node);
         }

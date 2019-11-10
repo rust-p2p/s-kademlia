@@ -18,14 +18,6 @@ impl From<bs58::decode::Error> for ParseError {
 // NOTE: caveats on this pattern https://boats.gitlab.io/failure/custom-fail.html
 // (poor forward compatibility)
 #[derive(Debug, Fail)]
-pub enum NodeIdGenError {
-    #[fail(display = "public key hash yielded zero byte array")]
-    PubkeyHashZero,
-    #[fail(display = "anti sybil generation timed out")]
-    HardGenTimeOut,
-}
-
-#[derive(Debug, Fail)]
 #[fail(display = "the calculated distance is zero (comparison with self)")]
 pub struct DistanceIsZero;
 

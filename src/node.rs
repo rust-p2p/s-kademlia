@@ -2,7 +2,7 @@ use crate::node_id::{KadMetric, NodeId};
 use crate::store::{NodeBucket, NodeTable};
 use std::{
     cmp::PartialEq,
-    net::{SocketAddr, IpAddr},
+    net::{IpAddr, SocketAddr},
     sync::{Arc, Mutex},
 };
 
@@ -49,7 +49,7 @@ pub enum NodeStatus {
 mod tests {
     use super::{NodeInfo, NodeStatus};
     use crate::node_id::NodeId;
-    use std::net::{SocketAddr, IpAddr, Ipv4Addr};
+    use std::net::{IpAddr, Ipv4Addr, SocketAddr};
     // import test scaffolding
     use crate::util::test::*;
 
