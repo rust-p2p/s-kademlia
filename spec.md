@@ -54,13 +54,9 @@ Signing Trait for NodeConfig with
 Node Discovery
 * iterative, disjoint lookup paths that converge upon the same path
 
-### Bitswap
-
-A generic data transfer protocol with configurable encoding (first-class support for binary encoding/decoding, not protobufs yet). This is being specified in TLA now.
-
 ## Brahms
 
-For membership-based gossip
+For membership-oriented gossip
 
 ## Chord, UrDHT (embedding latency)
 
