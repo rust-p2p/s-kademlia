@@ -13,7 +13,6 @@ rand = "0.7.2"
 time = "0.1.42"
 uint = "0.8"
 disco = { path = "../disco" }
-failure_derive = "0.1.6"
 failure = "0.1.6"
 
 [dependencies.ed25519-dalek]
