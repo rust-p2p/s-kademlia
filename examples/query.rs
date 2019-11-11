@@ -1,4 +1,4 @@
-//! (unfinished) example of querying in this kademlia protocol
+//! (unfinished) example of querying in skademlia
 use rand;
 use ed25519_dalek::Keypair;
 use s_kademlia::NodeId;

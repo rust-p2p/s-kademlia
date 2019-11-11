@@ -1,5 +1,5 @@
 use bs58;
-pub use failure::Error;
+pub use failure::Fail;
 use std::{convert::From, fmt};
 
 #[derive(Debug, Fail)]

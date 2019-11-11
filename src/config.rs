@@ -12,9 +12,5 @@ pub struct NodeHandler {
 
 #[cfg(test)]
 mod tests {
-    #[test]
-    fn sign_and_verify() {
-        // sign a message
-        // verify that the signature works
-    }
+    // TODO
 }

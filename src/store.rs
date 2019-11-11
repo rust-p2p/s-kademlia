@@ -38,7 +38,7 @@ impl NodeTable {
     }
 
     fn bucket_index(&self, id: &NodeId) -> Result<usize, DistanceIsZero> {
-        let diff = self.id.metric_distance(&id)?;
+        let diff = self.id.distance(&id)?;
         // this error returned from `ok_or` is actually inaccurate
         let index = (self.buckets.len() - diff.leading_zeros() as usize)
             .checked_sub(1)

@@ -136,31 +136,15 @@ pub trait KadMetric: PartialEq + Clone + fmt::Debug {
     type Err;
     type Metric;
 
-    fn distance(&self, other: &Self) -> Result<Self, Self::Err>;
     // used in `store` specifically
-    fn metric_distance(&self, other: &Self) -> Result<Self::Metric, Self::Err>;
+    fn distance(&self, other: &Self) -> Result<Self::Metric, Self::Err>;
 }
 
 impl KadMetric for NodeId {
     type Err = DistanceIsZero;
     type Metric = U256;
 
-    fn distance(&self, other: &NodeId) -> Result<NodeId, DistanceIsZero> {
-        let dist = self
-            .discohash
-            .iter()
-            .zip(other.discohash.iter())
-            .map(|(first, second)| first ^ second)
-            .collect();
-        let metric_node = NodeId { discohash: dist };
-        if metric_node.is_zero() {
-            return Err(DistanceIsZero);
-        } else {
-            return Ok(metric_node);
-        }
-    }
-
-    fn metric_distance(&self, other: &NodeId) -> Result<U256, DistanceIsZero> {
+    fn distance(&self, other: &NodeId) -> Result<U256, DistanceIsZero> {
         let a = U256::from(self.discohash.clone().as_slice());
         let b = U256::from(other.discohash.clone().as_slice());
         // xor
@@ -219,20 +203,6 @@ mod tests {
         let node_id = NodeId::from_public_key(key.public);
         let clone_node_id = node_id.clone();
         let distance = &node_id.distance(&clone_node_id);
-        let new_key = Keypair::generate(&mut rand::thread_rng());
-        let new_node_id = NodeId::from_public_key(new_key.public);
-        let distance2 = &node_id.distance(&new_node_id);
-        assert_eq!(distance.as_ref().unwrap_err(), &DistanceIsZero);
-        // assert!(distance2.as_ref().unwrap() != &DistanceIsZero); // if uncommented, compiler error below generated `=>` ok I guess
-        //                                      ^^ no implementation for `node_id::NodeId == error::DistanceIsZero`
-    }
-
-    #[test]
-    fn metric_distance_works() {
-        let key = Keypair::generate(&mut rand::thread_rng());
-        let node_id = NodeId::from_public_key(key.public);
-        let clone_node_id = node_id.clone();
-        let distance = &node_id.metric_distance(&clone_node_id);
         // distance from other key
         let new_key = Keypair::generate(&mut rand::thread_rng());
         let new_node_id = NodeId::from_public_key(new_key.public);
@@ -252,9 +222,9 @@ mod tests {
 
     #[test]
     fn incorrect_length_yields_parse_error() {
-        let mut big_data = vec![1u8; 33];
-        let mut little_data = vec![1u8; 31];
-        let mut ok_data = vec![1u8; 32];
+        let big_data = vec![1u8; 33];
+        let little_data = vec![1u8; 31];
+        let ok_data = vec![1u8; 32];
         assert_eq!(NodeId::from_bytes(big_data).unwrap_err(), ParseError);
         assert_eq!(NodeId::from_bytes(little_data).unwrap_err(), ParseError);
         assert!(NodeId::from_bytes(ok_data).is_ok());

@@ -13,9 +13,6 @@
 // to enhance kademlia with certain security features.
 #![feature(todo_macro)]
 
-#[macro_use]
-extern crate failure;
-
 // testing and error handling
 mod error;
 mod util;
