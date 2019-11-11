@@ -1,9 +1,6 @@
 /target
 
 # not ready
-examples/
 benches/
 # always private
-todo.md
 refs/
-incentives.md
