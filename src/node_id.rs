@@ -1,4 +1,4 @@
-use crate::ed25519::{Keypair, PublicKey};
+use crate::ed25519::{Keypair, PublicKey, Signature};
 use crate::error::{DistanceIsZero, ParseError};
 use crate::node::NodeInfo;
 use bs58;
@@ -79,12 +79,8 @@ impl NodeId {
     /// Verify Signature
     ///
     /// verify message signature made with the public key associated with this NodeId
-    pub fn verify_msg(message: &[u8], signature: &[u8], public_key: &[u8]) -> bool {
-        // change receive type to an error on verifying signatures
-
-        // would need to use the sign method in Node
-        // or take a signature
-        todo!();
+    pub fn verify(pubkey: PublicKey, msg: &[u8], sig: &[u8]) -> bool {
+        Signature::from_bytes(sig).and_then(|s| pubkey.verify(msg, &s)).is_ok()
     }
 }
 
@@ -180,7 +176,7 @@ impl KadMetric for NodeId {
 #[cfg(test)]
 mod tests {
     use super::{KadMetric, NodeId};
-    use crate::ed25519::Keypair;
+    use crate::ed25519::{Keypair, PublicKey, Signature};
     use crate::error::{DistanceIsZero, ParseError};
     use disco::hash;
     use rand;
@@ -205,6 +201,16 @@ mod tests {
         let key = Keypair::generate(&mut rand::thread_rng());
         let node_id = NodeId::from_public_key(key.public);
         assert!(node_id.is_public_key(key.public));
+    }
+
+    #[test]
+    fn sign_and_verify_works() {
+        let kp = Keypair::generate(&mut rand::thread_rng());
+        let node_id = NodeId::from_public_key(kp.public);
+        let msg = vec![1u8; 32];
+        let msg_copy = msg.clone();
+        let sig = kp.sign(&msg.as_slice()).to_bytes();
+        assert!(NodeId::verify(kp.public, msg_copy.as_slice(), &sig));
     }
 
     #[test]

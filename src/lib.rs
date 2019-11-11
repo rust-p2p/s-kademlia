@@ -26,4 +26,6 @@ mod node;
 mod node_id;
 mod store;
 
+pub use node_id::NodeId;
+
 pub use ed25519_dalek as ed25519;

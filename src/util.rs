@@ -2,7 +2,7 @@
 use crate::node_id::NodeId;
 use disco::DiscoHash;
 
-// should be useful for testing purposes
+// for testing purposes only (TODO: remove in lieu of `quickcheck`)
 pub trait Random<T> {
     fn random(len: usize) -> T;
 }
@@ -16,7 +16,6 @@ impl Random<NodeId> for NodeId {
     }
 }
 
-// (2) test scaffolding
 #[cfg(test)]
 pub mod test {
     use crate::node::{NodeInfo, NodeStatus};
