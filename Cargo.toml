@@ -12,8 +12,9 @@ bs58 = "0.3.0"
 rand = "0.7.2"
 time = "0.1.42"
 uint = "0.8"
-disco = { path = "../disco" }
+disco = { path = "../../disco" }
 failure = "0.1.6"
+arrayvec = "0.5.1"
 
 [dependencies.ed25519-dalek]
 git = "https://github.com/dvc94ch/ed25519-dalek"
@@ -25,20 +26,12 @@ quickcheck = "0.9.0"
 model = "0.1"
 
 [[bench]]
-name = "filter"
-harness = false
-
-[[bench]]
 name = "pow"
 harness = false
 
 [[bench]]
 name = "store"
 harness = false
-
-[features]
-default = ["std"]
-std = []
 
 [profile.bench]
 debug = true

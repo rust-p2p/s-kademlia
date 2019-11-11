@@ -44,37 +44,6 @@ impl NodeId {
         NodeId { discohash: keyhash }
     }
 
-    /// Generate NodeId
-    ///
-    /// Default no hard mechanism for slowing id generation
-    #[inline]
-    pub fn generate() -> NodeId {
-        // TODO: private key must be stored somewhere for signing messages?
-        let key = Keypair::generate(&mut rand::thread_rng());
-        let keyhash = hash(key.public.as_bytes(), 32);
-        NodeId { discohash: keyhash }
-    }
-
-    /// Generate NodeId with Resistance
-    ///
-    /// Requires disco::hash(public_key) to be have `difficulty` number of trailing zeros
-    /// WARNING: loop could keep running for a long time (no benchmarking done yet)
-    pub fn hard_generate(difficulty: usize) -> NodeId {
-        loop {
-            let new_id = NodeId::generate();
-            let mut success = true;
-            // default leading zeros
-            for i in 0..difficulty {
-                if new_id.discohash.get(i).unwrap() != &0u8 {
-                    success = false;
-                }
-            }
-            if success {
-                return new_id;
-            }
-        }
-    }
-
     #[inline]
     pub fn to_base58(&self) -> String {
         bs58::encode(self.discohash.as_slice()).into_string()
@@ -234,17 +203,18 @@ mod tests {
     #[test]
     fn node_id_is_public_key() {
         let key = Keypair::generate(&mut rand::thread_rng());
-        let keyhash = hash(key.public.as_bytes(), 32);
-        let node_id = NodeId { discohash: keyhash };
+        let node_id = NodeId::from_public_key(key.public);
         assert!(node_id.is_public_key(key.public));
     }
 
     #[test]
     fn distance_works() {
-        let node_id = NodeId::generate();
+        let key = Keypair::generate(&mut rand::thread_rng());
+        let node_id = NodeId::from_public_key(key.public);
         let clone_node_id = node_id.clone();
         let distance = &node_id.distance(&clone_node_id);
-        let new_node_id = NodeId::generate();
+        let new_key = Keypair::generate(&mut rand::thread_rng());
+        let new_node_id = NodeId::from_public_key(new_key.public);
         let distance2 = &node_id.distance(&new_node_id);
         assert_eq!(distance.as_ref().unwrap_err(), &DistanceIsZero);
         // assert!(distance2.as_ref().unwrap() != &DistanceIsZero); // if uncommented, compiler error below generated `=>` ok I guess
@@ -253,10 +223,13 @@ mod tests {
 
     #[test]
     fn metric_distance_works() {
-        let node_id = NodeId::generate();
+        let key = Keypair::generate(&mut rand::thread_rng());
+        let node_id = NodeId::from_public_key(key.public);
         let clone_node_id = node_id.clone();
         let distance = &node_id.metric_distance(&clone_node_id);
-        let new_node_id = NodeId::generate();
+        // distance from other key
+        let new_key = Keypair::generate(&mut rand::thread_rng());
+        let new_node_id = NodeId::from_public_key(new_key.public);
         let distance2 = &node_id.distance(&new_node_id);
         assert_eq!(distance.as_ref().unwrap_err(), &DistanceIsZero);
         // assert!(distance2.as_ref().unwrap() != &DistanceIsZero); // if uncommented, compiler error below generated `=>` ok I guess
@@ -265,7 +238,8 @@ mod tests {
 
     #[test]
     fn to_base58_then_back() {
-        let node_id = NodeId::generate();
+        let key = Keypair::generate(&mut rand::thread_rng());
+        let node_id = NodeId::from_public_key(key.public);
         let second: NodeId = node_id.to_base58().parse().unwrap();
         assert_eq!(node_id, second);
     }

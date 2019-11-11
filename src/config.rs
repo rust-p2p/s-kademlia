@@ -10,4 +10,11 @@ pub struct NodeHandler {
     table: Arc<RwLock<NodeTable>>,
 }
 
-// look at `service.rs`
+#[cfg(test)]
+mod tests {
+    #[test]
+    fn sign_and_verify() {
+        // sign a message
+        // verify that the signature works
+    }
+}

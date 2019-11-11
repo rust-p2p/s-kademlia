@@ -72,15 +72,19 @@ Signing Trait for NodeConfig with
 Node Discovery
 * iterative, disjoint lookup paths that converge upon the same path
 
-## Brahms
+### coordinating NAT traversal
 
-For membership-oriented gossip
-
-## Chord, UrDHT (embedding latency)
-
-`red-blue` taught us to partition the network based on data type to provide nuanced guarantees that align with real-world requirements. `s-kademlia` may be useful for certain communication while chord with some metric for embedding latency might be useful for other task organization.
+Need an additional mechanism to coordinate NAT traversal: a rendezvous service. Even if the external IP/Port is known, both parties need to establish a connection simultaneously, and one of them will fail...this problem persists in ipv6 where NATs are replaced with firewalls that drop unsolicited incoming messages.
 
 ## reliable sibling broadcast
 
 Common security problem is the reliability of sibling information which arises when replicated information needs to be stored in the DHT which uses a majority decision to compensate for adversarial nodes.
 > see [10](http://www.cs.kent.edu/~javed/class-IAD06S/papers-2004/gai.pdf) for definition of a *sibling* list to manage certain lists of `(id, value)` pairs
+
+### Brahms
+
+For membership-oriented gossip
+
+### Chord, UrDHT (embedding latency)
+
+`red-blue` taught us to partition the network based on data type to provide nuanced guarantees that align with real-world requirements. `s-kademlia` may be useful for certain communication while chord with some metric for embedding latency might be useful for other task organization.
